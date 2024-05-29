@@ -1,0 +1,149 @@
+.list-view {
+    grid-column: 2/10;
+    overflow: auto;
+    margin-top: 3rem;
+}
+
+.list-view ul {
+    text-decoration: none;
+    list-style: none;
+    padding: 0;
+}
+  
+.content-nav {
+    background-color: black;
+    grid-column: full-start/full-end;
+}
+  
+.actual-list {
+    width: 92%;
+    height: 13rem;
+    margin: 0 auto;
+    box-shadow: 0 3rem 6rem rgba(0, 0, 0, 0.1);
+    background-color: rgb(29, 29, 29);
+    border-radius: 3px;
+    margin-top: 3rem;
+    padding: 0.5rem;
+    padding-top: 1.5rem;
+    margin-left: 3.2rem;
+    margin-right: 5px;
+    padding-left: 1rem;
+}
+.actual-list:last-child {
+    margin-bottom: 1.5rem;
+}
+.actual-list:first-child {
+    margin-top: 0;
+}
+.actual-list:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2.5rem 4rem rgba(0, 0, 0, 0.5);
+    z-index: 20;
+}
+  
+.list-title {
+    font-size: 2.6rem;
+}
+  
+.list-description {
+    font-size: 1.2rem;
+    margin: 0 2rem;
+}
+  
+.score-img {
+    width: 10rem;
+    height: 10rem;
+    float: left;
+    background-color: red;
+    margin-right: 0.7rem;
+    position: relative;
+    shape-outside: circle(50% at 50% 50%);
+    clip-path: circle(50% at 50% 50%);
+    -webkit-clip-path: circle(50% at 50% 50%);
+    background-size: cover;
+    background-position: center;
+}
+.score-img figcaption {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 20%);
+    color: whitesmoke;
+    text-transform: uppercase;
+    font-size: 1.7rem;
+    text-align: center;
+    opacity: 0;
+    transition: all 0.5s;
+}
+.score-img img {
+    width: 132%;
+    height: 100%;
+}
+.score-img:hover figcaption {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+}
+.score-img:hover img {
+    filter: blur(3px) brightness(80%);
+}
+
+.link-class{
+    text-decoration: none;
+    color: #e4e4e4;
+}
+
+/* apply transition to moving elements */
+/* .list-move, 
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+} */
+
+/* .list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+} */
+
+/* ensure leaving items are taken out of layout flow so that moving
+   animations can be calculated correctly. */
+/* .list-leave-active {
+  position: absolute;
+} */
+
+
+#scrollbar-content ::-webkit-scrollbar-track
+{
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+	border-radius: 10px;
+	background-color: #F5F5F5;
+}
+
+#scrollbar-content::-webkit-scrollbar
+{
+	width: 12px;
+	background-color: #F5F5F5;
+}
+
+#scrollbar-content::-webkit-scrollbar-thumb
+{
+	border-radius: 10px;
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+	background-color: #555;
+}
+
+/* Style the dropdown arrow */
+label[for="category"]::after {
+    content: '▾'; /* Unicode down arrow */
+    position: absolute;
+    right: 10px; /* Adjust position as needed */
+    pointer-events: none; /* Prevent clicking on the arrow */
+    width: auto; /* or a specific width */
+}
+
+/* Hide the default dropdown arrow (optional) */
+#category {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
