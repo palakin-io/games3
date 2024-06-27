@@ -1,4 +1,8 @@
 <template>
+    <modal v-if="showModal" @close="handleClose">
+        <log-in-form></log-in-form>
+    </modal>
+
     <div class="navigation">
         <input type="checkbox" class="navigation-checkbox" id="navi-toggle" ref="navToggle"> 
         <label for="navi-toggle" class="navigation-button">
@@ -14,15 +18,30 @@
                   <router-link to="/games-list" class="navigation-link" @click="closeNavigation">Games List</router-link>
                 </li>
                 <li class="navigation-item"><a href="#" class="navigation-link">Movies</a></li>
-                <!-- <li v-if="token !=''" class="navigation-item"><a href="javascript:void(0)" class="navigation-link" @click="closeNav">Log Out</a></li>
-                <li v-else class="navigation-item"><router-link to="/sign-in" class="navigation-link">Sign In</router-link></li> -->
+                <li v-if="authStore.isLoggedIn" class="navigation-item"><a href="javascript:void(0)" class="navigation-link" @click="logout">Log Out</a></li>
+                <li v-else class="navigation-item"><a href="javascript:void(0)" class="navigation-link" @click.prevent="openLogIn">Sign In</a></li>
             </ul>
         </nav>
     </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, provide } from 'vue';
+import Modal from '@/components/Modal.vue';
+import LogInForm from '@/components/LogInForm.vue'
+import { useAuthStore } from '@/stores/auth';
+
+const authStore = useAuthStore();
+const showModal = ref(false)
+function openLogIn(){
+    showModal.value = true;
+    closeNavigation();
+}
+const handleClose = () => {
+    showModal.value = false;
+}
+
+provide('close', handleClose);
 
 const navToggle = ref(null);
 
@@ -31,6 +50,11 @@ const closeNavigation = () => {
     navToggle.value.checked = false; 
   }
 };
+
+const logout = () => {
+    authStore.clearToken();
+    closeNavigation();
+}
 </script>
 
 <style scoped>

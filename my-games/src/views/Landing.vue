@@ -1,4 +1,7 @@
 <template>
+    <modal v-if="showModal" @close="handleClose">
+        <log-in-form></log-in-form>
+    </modal>
 
     <header class="header">
         <div class="logo-box">
@@ -10,7 +13,7 @@
                 <span class="heading-primary-main">My Games</span>
                 <!-- <span v-if="token !=''" class="heading-primary-sub">Welcome:  {{ userStore.user.first_name }}</span> -->
             </h1>
-            <!-- <router-link to="/log-in" class="boton btn-white">Discover</router-link> -->
+            <a v-if="!authStore.isLoggedIn" href="#" class="boton btn-white" @click.prevent="openLogIn">Log In</a>
         </div>
     </header>
 
@@ -47,6 +50,22 @@
 </template>
 
 <script setup>
+import Modal from '@/components/Modal.vue';
+import LogInForm from '@/components/LogInForm.vue'
+import { provide, ref } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+
+const authStore = useAuthStore();
+
+const showModal = ref(false)
+function openLogIn(){
+    showModal.value = true;
+}
+const handleClose = () => {
+    showModal.value = false;
+}
+
+provide('close', handleClose);
 
 </script>
 

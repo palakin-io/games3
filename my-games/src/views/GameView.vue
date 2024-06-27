@@ -16,7 +16,7 @@
                         {{ gameData.description }}
                     </span>
                 </p>
-                <router-link
+                <router-link v-if="authStore.isLoggedIn"
                     :to="{ name: 'edit-game', params: { id: gameId } }"
                     class="px-6 py-3 bg-[#c8a876] text-white font-medium rounded-full hover:bg-[#c09858]  transition duration-200 bottom-4 right-4 absolute">
                     EditGame
@@ -162,6 +162,7 @@ import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios'
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 import Cards from '@/components/CardView.vue'
 import Modal from '@/components/Modal.vue';
@@ -171,6 +172,8 @@ const classes = ref({
     scoreTitle: 'title-font font-regular text-2xl text-gray-200 mt-6',
     scoreNumber: 'rounded-full w-24 h-24 border-4 border-[#c8a876] text-[#c8a876] flex items-center justify-center  text-3xl font-semibold'
 })
+
+const authStore = useAuthStore();
 
 const route = useRoute();
 const gameId = route.params.gameID;

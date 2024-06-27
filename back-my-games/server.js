@@ -3,8 +3,13 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-const Game = require('./models/game_schema'); // Make sure the path is correct
+const secret = '12340789';
+
+const Game = require('./models/game_schema');
+const User = require('./models/user_schema');
 
 
 const app = express();
@@ -51,7 +56,7 @@ app.get('/api/games/:gameId', async (req, res) => {
 
 app.get('/api/games', async (req, res) => {
     try {
-        const games = await Game.find(); // Fetch all games from the database
+        const games = await Game.find().sort({ 'ratings.main': -1 }); // Fetch all games from the database and sort
         res.json(games);
     } catch (error) {
         console.error(error);
@@ -210,6 +215,74 @@ app.put('/api/games/:gameId/edit', upload.single('wallpaper'), async (req, res) 
             return res.status(400).json({ message: 'Validation error', errors: error.errors });
         }
 
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+// Registration Route
+app.post('/api/users/register', upload.none(), async (req, res) => {
+    try {
+        console.log(req.body);
+        const { username, email, password } = req.body;
+
+        console.log('username: ', username);
+        console.log('email: ', email);
+        console.log('password: ', password);
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        // Hash the password
+        const saltRounds = 10; // stronger hashing
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // Create a new user object
+        const newUser = new User({
+            username,
+            email,
+            password: hashedPassword
+        });
+
+        // Save the user to the database
+        await newUser.save();
+
+        res.status(201).json({ message: 'User registered successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+// Login Route
+app.post('/api/users/login', async (req, res) => {
+    try {
+        const { login, password } = req.body;
+
+        // Find the user by either username or email
+        const user = await User.findOne({
+            $or: [{ username: login }, { email: login }] 
+        });
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Compare the provided password with the hashed password
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Create and sign a JWT token
+        const token = jwt.sign({ userId: user._id, username: user.username }, secret, { expiresIn: '1h' }); // 1 hour expiration
+
+        res.json({ token });
+    } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 });

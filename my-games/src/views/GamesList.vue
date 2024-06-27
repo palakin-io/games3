@@ -68,7 +68,7 @@
             </li>
         </TransitionGroup>
   </div>
-  <div class="fixed top-4 left-4">
+  <div v-if="authStore.isLoggedIn" class="fixed top-4 left-4">
     <router-link :to="{ name: 'upload-game' }" class="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">
       Upload Game
     </router-link>
@@ -84,26 +84,19 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import gsap from 'gsap';
 import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
 
-// const gamelist = [
-//   { title:'The Witcher 3', score: 10, img: 'https://wallpapers-clan.com/wp-content/uploads/2023/10/serious-geralt-of-rivia-desktop-wallpaper-preview.jpg', description: 'asdasdsadsad' },
-//   { title:'The Witcher 3', score: 10, img: 'https://wallpapers-clan.com/wp-content/uploads/2023/10/serious-geralt-of-rivia-desktop-wallpaper-preview.jpg', description: 'asdasdsadsad' },
-//   { title:'naruto', score: 10, img: 'https://wallpapers-clan.com/wp-content/uploads/2023/10/serious-geralt-of-rivia-desktop-wallpaper-preview.jpg', description: 'asdasdsadsad' },
-//   { title:'great', score: 10, img: 'https://wallpapers-clan.com/wp-content/uploads/2023/10/serious-geralt-of-rivia-desktop-wallpaper-preview.jpg', description: 'asdasdsadsad' },
-//   { title:'great', score: 10, img: 'https://wallpapers-clan.com/wp-content/uploads/2023/10/serious-geralt-of-rivia-desktop-wallpaper-preview.jpg', description: 'asdasdsadsad' },
-//   { title:'great', score: 10, img: 'https://wallpapers-clan.com/wp-content/uploads/2023/10/serious-geralt-of-rivia-desktop-wallpaper-preview.jpg', description: 'asdasdsadsad' },
-// ]
+const authStore = useAuthStore();
 
 const games = ref([]);
 
 async function fetchGames() {
   try {
     const response = await axios.get('http://localhost:3000/api/games'); // Fetch all games
-    games.value = response.data.sort((a, b) => b.ratings.main - a.ratings.main); // Sort descending
-    console.log(response.data);
+    // games.value = response.data.sort((a, b) => b.ratings.main - a.ratings.main); // Sort descending
+    games.value = response.data;
   } catch (error) {
     console.error('Error fetching games:', error.response ? error.response.data : error.message);
-    // Handle error (e.g., display an error message to the user)
   }
 }
 
