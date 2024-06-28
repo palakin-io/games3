@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
         token: localStorage.getItem('token') || null,
+        userID: null
     }),
     getters: {
         isLoggedIn: (state) => !!state.token,
@@ -15,6 +16,7 @@ export const useAuthStore = defineStore('auth', {
             this.token = token;
             let decodedToken = jwtDecode(token);
             this.user = decodedToken.username;
+            this.userID = decodedToken.userId;
             localStorage.setItem('token', token);
         },
         clearToken() {

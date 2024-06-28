@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
 
 const secret = '12340789';
 
@@ -36,6 +37,25 @@ mongoose.connect(uri, clientOptions)
 // Middleware for parsing JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Authentication Middleware
+function authenticateJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader) {
+      const token = authHeader.split(' ')[1]; // Extract the token from the Bearer header
+  
+      jwt.verify(token, secret, (err, user) => {
+        if (err) {
+          return res.status(403).json({ message: 'Invalid token' });
+        }
+        req.user = user; // Attach the user data to the request object for later use
+        next(); // Allow the request to proceed to the next middleware or route handler
+      });
+    } else {
+      res.sendStatus(401); // Unauthorized if no token is provided
+    }
+}
 
 // API Routes
 app.get('/api/games/:gameId', async (req, res) => {
@@ -75,7 +95,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
-app.post('/api/games/upload', upload.single('wallpaper'), async (req, res) => {
+app.post('/api/games/upload', authenticateJWT, upload.single('wallpaper'), async (req, res) => {
     try {
         console.log('Received game data:', req.body); // Log to check incoming data
         console.log('Received file data:', req.file);
@@ -140,7 +160,7 @@ app.post('/api/games/upload', upload.single('wallpaper'), async (req, res) => {
     }
 });
 
-app.put('/api/games/:gameId/edit', upload.single('wallpaper'), async (req, res) => {
+app.put('/api/games/:gameId/edit', authenticateJWT, upload.single('wallpaper'), async (req, res) => {
     try {
         console.log('Received game update data:', req.body); // Log to check incoming data
         console.log('Received file update data:', req.file);
@@ -201,6 +221,14 @@ app.put('/api/games/:gameId/edit', upload.single('wallpaper'), async (req, res) 
 
         // Find and update the game using its ID
         const updatedGame = await Game.findByIdAndUpdate(gameId, gameData, { new: true });
+
+        // Delete the old wallpaper image (if a new one was uploaded)
+        if (req.file && existingGame.wallpaper) {
+            const oldImagePath = path.join(__dirname, existingGame.wallpaper);
+            fs.unlink(oldImagePath, (err) => {
+                if (err) console.error('Error deleting old image:', err);
+            });
+        }
 
         if (!updatedGame) {
             return res.status(404).json({ message: 'Game not found' });
@@ -278,9 +306,22 @@ app.post('/api/users/login', async (req, res) => {
         }
 
         // Create and sign a JWT token
-        const token = jwt.sign({ userId: user._id, username: user.username }, secret, { expiresIn: '1h' }); // 1 hour expiration
+        const token = jwt.sign({ userId: user._id, username: user.username, email: user.email }, secret, { expiresIn: '1h' }); // 1 hour expiration
 
         res.json({ token });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+//refresh token
+app.post('/api/auth/refresh', authenticateJWT, async (req, res) => {
+    try {
+        const userId = req.user.userId; 
+
+        const newToken = jwt.sign({ userId }, secret, { expiresIn: '1h' });
+        res.json({ token: newToken });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
