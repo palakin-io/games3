@@ -32,7 +32,12 @@ const gameSchema = new mongoose.Schema({
     _id: false 
   }],
   trailer_url: String,
-  wiki_url: String
+  wiki_url: String,
+  creator: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
 });
 
 const Game = mongoose.model('Game', gameSchema, 'games');

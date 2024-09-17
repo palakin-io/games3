@@ -61,7 +61,9 @@
                         </figure>
                         <h3 class="list-title">{{ game.title }}</h3>
                         <div class="list-description">
-                            {{ game.description }} 
+                            <p class="list-description-text">
+                              {{ game.description }}
+                            </p> 
                         </div>
                     </div>
                 </router-link>
@@ -92,7 +94,7 @@ const games = ref([]);
 
 async function fetchGames() {
   try {
-    const response = await axios.get('http://localhost:3000/api/games'); // Fetch all games
+    const response = await axios.get('http://localhost:3000/api/gamesByUser'); // Fetch all games by user
     // games.value = response.data.sort((a, b) => b.ratings.main - a.ratings.main); // Sort descending
     games.value = response.data;
   } catch (error) {
@@ -105,7 +107,7 @@ onMounted(fetchGames); // Call fetchGames when the component mounts
 const searchGame = ref('');
 const listContainerRef = ref(null);
 
-const genres = ["All Genres","JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure"]
+const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
 const selectedGenre = ref('All Genres'); // Stores the selected genre
 
 const filteredGameList = computed(() => {

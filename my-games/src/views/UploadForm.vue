@@ -185,7 +185,7 @@ import DragAndDrop from '@/components/misc/DragAndDrop.vue';
 import SelectInput from '@/components/misc/SelectInput.vue';
 import SideSlide from '@/components/SideSlide.vue'
 
-const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure"]
+const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
 const scores = [1, 2, 3, 4, 5,6,7,8,9,10]
 
 const game = ref({

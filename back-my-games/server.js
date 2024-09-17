@@ -84,6 +84,17 @@ app.get('/api/games', async (req, res) => {
     }
 });
 
+app.get('/api/gamesByUser', authenticateJWT, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const games = await Game.find({ creator: userId }).sort({ 'ratings.main': -1 });
+        res.json(games);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Set up storage for Multer
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -129,7 +140,8 @@ app.post('/api/games/upload', authenticateJWT, upload.single('wallpaper'), async
             dateEnd: dateEnd,
             soundtracks: soundtracks,
             trailer_url: req.body.trailer_url,
-            wiki_url: req.body.wiki_url
+            wiki_url: req.body.wiki_url,
+            creator: req.user.userId
         };
 
         // Extract individual rating values from req.body

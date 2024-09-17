@@ -215,7 +215,7 @@ const router = useRouter();
 const gameId = route.params.gameID;
 const gameData = ref(null);
 
-const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure"]
+const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
 const scores = [1, 2, 3, 4, 5,6,7,8,9,10]
 
 const game = ref({

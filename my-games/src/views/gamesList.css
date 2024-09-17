@@ -48,6 +48,19 @@
 .list-description {
     font-size: 1.2rem;
     margin: 0 2rem;
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+    height: 115px;
+}
+
+.list-description-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    line-clamp: 4;
 }
   
 .score-img {
