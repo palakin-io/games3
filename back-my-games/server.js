@@ -11,6 +11,8 @@ const secret = '12340789';
 
 const Game = require('./models/game_schema');
 const User = require('./models/user_schema');
+const Movie = require('./models/movie_schema');
+
 
 
 const app = express();
@@ -108,8 +110,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 app.post('/api/games/upload', authenticateJWT, upload.single('wallpaper'), async (req, res) => {
     try {
-        console.log('Received game data:', req.body); // Log to check incoming data
-        console.log('Received file data:', req.file);
+        // console.log('Received game data:', req.body); // Log to check incoming data
+        // console.log('Received file data:', req.file);
         // Convert date strings to Date objects
         const dateStart = new Date(req.body.dateStart);
         const dateEnd = new Date(req.body.dateEnd);
@@ -153,7 +155,7 @@ app.post('/api/games/upload', authenticateJWT, upload.single('wallpaper'), async
             }
         }
 
-        console.log('Game data after parsing:', gameData); // Log the parsed gameData
+        // console.log('Game data after parsing:', gameData); // Log the parsed gameData
         
         //Validate fields according to schema
         const newGame = new Game(gameData);
@@ -259,6 +261,60 @@ app.put('/api/games/:gameId/edit', authenticateJWT, upload.single('wallpaper'), 
     }
 });
 
+// Route to save movie data to MongoDB
+app.post('/api/movies/add', authenticateJWT, async (req, res) => { 
+    try {
+      const { tmdbId, title, posterPath, score, genreIds } = req.body;
+  
+      // Create a new movie object
+      const newMovie = new Movie({
+        tmdbId,
+        title,
+        posterPath,
+        score, 
+        genreIds,
+        userId: req.user.userId, 
+      });
+  
+      // Save the movie data to the database
+      await newMovie.save();
+  
+      res.status(201).json({ message: 'Movie saved successfully' }); 
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error saving movie' });
+    }
+  });
+
+app.get('/api/moviesByUser', authenticateJWT, async (req, res) => {
+    try {
+        const user = req.user.userId;
+        const movies = await Movie.find({ userId: user }).sort({ 'score': -1 });
+        res.json(movies);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/movies/:movieId', authenticateJWT, async (req, res) => {
+    try {
+      const movieId = req.params.movieId; 
+      const userId = req.user.userId;
+  
+      const movie = await Movie.findOne({ _id: movieId, userId: userId });
+      if (!movie) {
+        return res.status(404).json({ message: 'Movie not found or you are not authorized to delete it' });
+      }
+  
+      await Movie.findByIdAndDelete(movieId);
+  
+      res.json({ message: 'Movie deleted successfully' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error deleting movie' });
+    }
+});
 
 // Registration Route
 app.post('/api/users/register', upload.none(), async (req, res) => {

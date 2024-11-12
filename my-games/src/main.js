@@ -24,7 +24,6 @@ axios.interceptors.request.use(
             const decodedToken = jwtDecode(token);
             const currentTime = Date.now() / 1000;
     
-            // Check if token is about to expire (e.g., within 5 minutes)
             if (decodedToken.exp < currentTime + 300) { 
                 try {
                     // Refresh the token
@@ -43,7 +42,7 @@ axios.interceptors.request.use(
                     throw refreshError;
                 }
             } else { // Add token to header
-            config.headers.Authorization = `Bearer ${token}`;
+                config.headers.Authorization = `Bearer ${token}`;
             }
         }
         return config;

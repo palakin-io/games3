@@ -56,6 +56,9 @@ import { provide, ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
+if (!authStore.isLoggedIn) { // Check isLoggedIn first
+    authStore.clearToken(); 
+}
 
 const showModal = ref(false)
 function openLogIn(){

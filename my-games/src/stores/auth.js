@@ -1,6 +1,17 @@
 import { defineStore } from "pinia";
 import { jwtDecode } from "jwt-decode";
 
+function isValidToken(token) {
+    if (!token) return false;
+    try {
+        const decodedToken = jwtDecode(token);
+        const currentTime = Date.now() / 1000;
+        return decodedToken.exp > currentTime;
+    } catch (error) {
+        return false; 
+    }
+}
+
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
@@ -8,7 +19,13 @@ export const useAuthStore = defineStore('auth', {
         userID: null
     }),
     getters: {
-        isLoggedIn: (state) => !!state.token,
+        isLoggedIn: (state) => {
+            if (isValidToken(state.token)) {
+                return true;
+            } else {
+                return false;
+            }
+        },
         userName: (state) => state.user ? state.user : "",
     },
     actions: {

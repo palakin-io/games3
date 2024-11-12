@@ -4,13 +4,13 @@
     </modal>
 
     <div class="navigation">
-        <input type="checkbox" class="navigation-checkbox" id="navi-toggle" ref="navToggle"> 
+        <input @click="controlNav()" type="checkbox" class="navigation-checkbox" id="navi-toggle" ref="navToggle"> 
         <label for="navi-toggle" class="navigation-button">
           <span class="navigation-icon"></span>
         </label>
         <div class="navigation-background">&nbsp;</div>
 
-        <nav class="navigation-nav">
+        <nav v-if="isNavOpen" class="navigation-nav">
             <ul class="navigation-list">
                 <li class="navigation-item">
                   <router-link to="/" class="navigation-link" @click="closeNavigation">Home</router-link>
@@ -20,7 +20,9 @@
                 <li class="navigation-item">
                   <router-link to="/games-list" class="navigation-link" @click="closeNavigation">Games List</router-link>
                 </li>
-                <li class="navigation-item"><a href="#" class="navigation-link">Movies</a></li>
+                <li class="navigation-item">
+                    <router-link to="/movies" class="navigation-link" @click="closeNavigation">Movies</router-link>
+                </li>
                 <li v-if="authStore.isLoggedIn" class="navigation-item"><a href="javascript:void(0)" class="navigation-link" @click="logout">Log Out</a></li>
                 <li v-else class="navigation-item"><a href="javascript:void(0)" class="navigation-link" @click.prevent="openLogIn">Sign In</a></li>
             </ul>
@@ -47,12 +49,26 @@ const handleClose = () => {
 provide('close', handleClose);
 
 const navToggle = ref(null);
+const isNavOpen = ref(false);
 
 const closeNavigation = () => {
   if (navToggle.value) {
     navToggle.value.checked = false; 
   }
+  setTimeout(() => {
+    isNavOpen.value = false; // Remove from DOM after transition
+  }, 800); // Match the transition duration (0.8s)
 };
+
+const controlNav = () => {
+    if(isNavOpen.value){
+        closeNavigation();
+    }else{
+        isNavOpen.value = true;
+        navToggle.value.checked = true;
+    }
+};
+
 
 const logout = () => {
     authStore.clearToken();
