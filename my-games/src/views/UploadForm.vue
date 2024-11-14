@@ -63,7 +63,8 @@
     </side-slide>
     <form @submit.prevent="submitForm" class="container mx-auto mt-8 mb-8 p-6 bg-gray-100 rounded-lg shadow-md">
         <div class="mb-4">
-            <form-input v-model="game.title" label="Game Title" type="text" name="title" required="true" :value="game.title"></form-input>
+            <!-- <form-input v-model="game.title" label="Game Title" type="text" name="title" required="true" :value="game.title"></form-input> -->
+             <SearchInput v-model="game.title" label="Game Title" type="text" name="title" required="true" :value="game.title"></SearchInput>
         </div>
 
         <div class="mb-4">
@@ -184,6 +185,7 @@ import FormInput from '@/components/misc/FormInput.vue';
 import DragAndDrop from '@/components/misc/DragAndDrop.vue';
 import SelectInput from '@/components/misc/SelectInput.vue';
 import SideSlide from '@/components/SideSlide.vue'
+import SearchInput from '@/components/misc/SearchInput.vue';
 
 const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
 const scores = [1, 2, 3, 4, 5,6,7,8,9,10]
