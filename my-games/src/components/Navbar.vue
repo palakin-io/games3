@@ -70,9 +70,14 @@ const controlNav = () => {
 };
 
 
+import { useRouter } from 'vue-router';
+const router = useRouter();
+
 const logout = () => {
-    authStore.clearToken();
+    authStore.clearTokens();
     closeNavigation();
+    router.push('/');
+    window.location.reload();
 }
 </script>
 

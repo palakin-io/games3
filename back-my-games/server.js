@@ -12,6 +12,13 @@ const secret = '12340789';
 const Game = require('./models/game_schema');
 const User = require('./models/user_schema');
 const Movie = require('./models/movie_schema');
+// Add RefreshToken model
+const refreshTokenSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  token: { type: String, required: true },
+  expiresAt: { type: Date, required: true }
+});
+const RefreshToken = mongoose.model('RefreshToken', refreshTokenSchema);
 
 
 
@@ -373,10 +380,19 @@ app.post('/api/users/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Create and sign a JWT token
-        const token = jwt.sign({ userId: user._id, username: user.username, email: user.email }, secret, { expiresIn: '1h' }); // 1 hour expiration
+        // Create and sign access and refresh tokens
+        const accessToken = jwt.sign({ userId: user._id, username: user.username, email: user.email }, secret, { expiresIn: '15m' }); // 15 min expiration
+        const refreshTokenValue = jwt.sign({ userId: user._id }, secret, { expiresIn: '7d' }); // 7 days expiration
 
-        res.json({ token });
+        // Store refresh token in DB
+        const refreshTokenDoc = new RefreshToken({
+          userId: user._id,
+          token: refreshTokenValue,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        });
+        await refreshTokenDoc.save();
+
+        res.json({ accessToken, refreshToken: refreshTokenValue });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -384,14 +400,33 @@ app.post('/api/users/login', async (req, res) => {
 });
 
 //refresh token
-app.post('/api/auth/refresh', authenticateJWT, async (req, res) => {
-    try {
-        const userId = req.user.userId; 
-
-        const newToken = jwt.sign({ userId }, secret, { expiresIn: '1h' });
-        res.json({ token: newToken });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+app.post('/api/auth/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token required' });
     }
+    // Verify refresh token
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, secret);
+    } catch (err) {
+      return res.status(403).json({ message: 'Invalid refresh token' });
+    }
+    // Check if refresh token exists in DB and is not expired
+    const tokenDoc = await RefreshToken.findOne({ token: refreshToken, userId: payload.userId });
+    if (!tokenDoc || tokenDoc.expiresAt < new Date()) {
+      return res.status(403).json({ message: 'Refresh token expired or not found' });
+    }
+    // Issue new access token
+    const user = await User.findById(payload.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const newAccessToken = jwt.sign({ userId: user._id, username: user.username, email: user.email }, secret, { expiresIn: '15m' });
+    res.json({ accessToken: newAccessToken });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });

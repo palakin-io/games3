@@ -14,7 +14,7 @@
         </button>
         <label class="flex-shrink-0 focus-within:ring h-full rounded-md bg-gray-200 ring-emerald-200 ml-2" for="category">
           <div class="relative">
-            <select class="flex items-center justify-center bg-transparent px-6 py-4 outline-none w-full appearance-none" name="category" id="category" v-model="selectedGenre"> 
+            <select class="flex items-center justify-center bg-transparent px-6 pt-3 pb-4 outline-none w-full appearance-none" name="category" id="category" v-model="selectedGenre"> 
               <option class="peer ml-2 flex-grow bg-transparent text-gray-500 outline-none" v-for="genre in genres" :value="genre">{{ genre }}</option>
             </select>
           </div>
@@ -40,7 +40,7 @@
                 <router-link :to="`/game-view/${game._id}`" class="link-class">
                     <div class="actual-list">
                         <figure class="score-img">
-                            <img :src="game.characters[0].picture_url" alt="cover">
+                            <img :src="game.characters[0].picture_url" alt="cover" loading="lazy">
                             <figcaption>{{ game.ratings.main }}</figcaption>
                         </figure>
                         <h3 class="list-title">{{ game.title }}</h3>
@@ -67,7 +67,7 @@
 
 <script setup>
 
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import gsap from 'gsap';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
@@ -75,11 +75,11 @@ import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
 
 const games = ref([]);
+const displayedCount = ref(10); // Number of games to display
 
 async function fetchGames() {
   try {
     const response = await axios.get('http://localhost:3000/api/gamesByUser'); // Fetch all games by user
-    // games.value = response.data.sort((a, b) => b.ratings.main - a.ratings.main); // Sort descending
     games.value = response.data;
   } catch (error) {
     console.error('Error fetching games:', error.response ? error.response.data : error.message);
@@ -91,23 +91,51 @@ onMounted(fetchGames); // Call fetchGames when the component mounts
 const searchGame = ref('');
 const listContainerRef = ref(null);
 
-const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
+const genres = ["All Genres", "JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
 const selectedGenre = ref('All Genres'); // Stores the selected genre
 
-const filteredGameList = computed(() => {
+// This computed property filters the entire list of games.
+const fullyFilteredList = computed(() => {
   const searchTerm = searchGame.value.toLowerCase();
   const filteredByGenre = games.value.filter(game => {
-    // Filter by genre only if selectedGenre is not null or empty
+    // Filter by genre only if selectedGenre is not 'All Genres'
     if (selectedGenre.value !== 'All Genres') {
       return game.genre === selectedGenre.value;
     } else {
-      return true; // If no genre is selected, show all games
+      return true; // If 'All Genres' is selected, show all games
     }
   });
 
   return filteredByGenre.filter(game =>
     game.title.toLowerCase().includes(searchTerm)
   );
+});
+
+// This computed property creates the paginated list for rendering.
+const filteredGameList = computed(() => {
+  return fullyFilteredList.value.slice(0, displayedCount.value);
+});
+
+// When filters change, reset the displayed count to the initial page size.
+watch([searchGame, selectedGenre], () => {
+    displayedCount.value = 10;
+});
+
+const handleScroll = () => {
+  // Add a buffer to trigger loading before reaching the absolute bottom
+  const buffer = 100; 
+  const atBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - buffer;
+
+  if (atBottom) {
+    // Check if there are more games to load from the filtered list
+    if (displayedCount.value < fullyFilteredList.value.length) {
+      displayedCount.value += 10; // Load 10 more games
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll);
 });
 
 function onBeforeEnter(el) {
@@ -148,4 +176,9 @@ function updateContainerHeight() {
     });
   }
 }
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+});
+
 </script>

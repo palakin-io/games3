@@ -15,31 +15,50 @@ function isValidToken(token) {
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
-        token: localStorage.getItem('token') || null,
+        accessToken: localStorage.getItem('accessToken') || null,
+        refreshToken: localStorage.getItem('refreshToken') || null,
         userID: null
     }),
     getters: {
         isLoggedIn: (state) => {
-            if (isValidToken(state.token)) {
-                return true;
-            } else {
-                return false;
-            }
+            return isValidToken(state.accessToken);
         },
         userName: (state) => state.user ? state.user : "",
     },
     actions: {
-        setToken(token) {
-            this.token = token;
-            let decodedToken = jwtDecode(token);
-            this.user = decodedToken.username;
-            this.userID = decodedToken.userId;
-            localStorage.setItem('token', token);
+        setTokens({ accessToken, refreshToken }) {
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
+            if (accessToken) {
+                let decodedToken = jwtDecode(accessToken);
+                this.user = decodedToken.username;
+                this.userID = decodedToken.userId;
+            } else {
+                this.user = null;
+                this.userID = null;
+            }
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
         },
-        clearToken() {
-            this.token = null;
+        clearTokens() {
+            this.accessToken = null;
+            this.refreshToken = null;
             this.user = null;
-            localStorage.removeItem('token');
+            this.userID = null;
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+        },
+        setAccessToken(accessToken) {
+            this.accessToken = accessToken;
+            if (accessToken) {
+                let decodedToken = jwtDecode(accessToken);
+                this.user = decodedToken.username;
+                this.userID = decodedToken.userId;
+            } else {
+                this.user = null;
+                this.userID = null;
+            }
+            localStorage.setItem('accessToken', accessToken);
         },
     },
 });

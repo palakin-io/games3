@@ -215,7 +215,7 @@ const router = useRouter();
 const gameId = route.params.gameID;
 const gameData = ref(null);
 
-const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
+const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike","Visual Novel"]
 const scores = [1, 2, 3, 4, 5,6,7,8,9,10]
 
 const game = ref({
@@ -296,6 +296,16 @@ const newCharacter = ref({
     name: '',
     picture_url: ''
 })
+
+
+
+
+//need to change the way it adds games if it is visual novel shouldnt have gameplay score
+
+
+
+
+
 const isEditing = ref(false);
 const characterBeingEdited = ref(null);
 function addCharacter() {

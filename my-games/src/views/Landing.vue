@@ -57,7 +57,7 @@ import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
 if (!authStore.isLoggedIn) { // Check isLoggedIn first
-    authStore.clearToken(); 
+    authStore.clearTokens(); 
 }
 
 const showModal = ref(false)

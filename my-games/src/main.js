@@ -16,41 +16,41 @@ app.use(router)
 
 // Add a request interceptor
 axios.interceptors.request.use(
-    async (config) => {
-      const authStore = useAuthStore();
-      const token = authStore.token;
-  
-        if (token) {
-            const decodedToken = jwtDecode(token);
-            const currentTime = Date.now() / 1000;
-    
-            if (decodedToken.exp < currentTime + 300) { 
-                try {
-                    // Refresh the token
-                    const refreshResponse = await axios.post('http://localhost:3000/api/auth/refresh', {
-                        token: token,
-                    });
-        
-                    const newToken = refreshResponse.data.token;
-                    authStore.setToken(newToken); // Update token in the store
-        
-                    // Update the Authorization header with the new token
-                    config.headers.Authorization = `Bearer ${newToken}`;
-                } catch (refreshError) {
-                    console.error('Failed to refresh token:', refreshError);
-                    authStore.logout();
-                    throw refreshError;
-                }
-            } else { // Add token to header
-                config.headers.Authorization = `Bearer ${token}`;
-            }
+  async (config) => {
+    const authStore = useAuthStore();
+    const accessToken = authStore.accessToken;
+    const refreshToken = authStore.refreshToken;
+    if (accessToken) {
+      const decodedToken = jwtDecode(accessToken);
+      const currentTime = Date.now() / 1000;
+      // If access token is about to expire in 2 min
+      if (decodedToken.exp < currentTime + 120 && refreshToken) {
+        try {
+          // Refresh the access token using refresh token
+          const refreshResponse = await axios.post('http://localhost:3000/api/auth/refresh', {
+            refreshToken: refreshToken,
+          });
+          const newAccessToken = refreshResponse.data.accessToken;
+          authStore.setAccessToken(newAccessToken); // Update access token in the store
+          config.headers.Authorization = `Bearer ${newAccessToken}`;
+        } catch (refreshError) {
+          console.error('Failed to refresh access token:', refreshError);
+          // On refresh failure, logout the user and redirect to login
+          authStore.clearTokens();
+          router.push('/login');
+          window.location.reload();
+          return Promise.reject(refreshError);
         }
-        return config;
-    },
-    (error) => {
-      // Handle request errors
-      return Promise.reject(error);
+      } else {
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
     }
+    return config;
+  },
+  (error) => {
+    // Handle request errors
+    return Promise.reject(error);
+  }
 );
 
 app.mount('#app')

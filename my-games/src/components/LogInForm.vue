@@ -121,11 +121,12 @@ const authStore = useAuthStore();
 async function login() {
     try {
         const response = await axios.post('http://localhost:3000/api/users/login', { login: loginName.value, password: password.value });
-        authStore.setToken(response.data.token);
+        const { accessToken, refreshToken } = response.data;
+        authStore.setTokens({ accessToken, refreshToken });
         closeModal();
     } catch (error) {
         // Handle login error
-        console.log('Error loging in',error);
+        console.log('Error logging in', error);
     }
 }
 </script>

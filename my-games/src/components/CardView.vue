@@ -11,8 +11,8 @@
         <button @click="showModal = true" class="absolute inset-x-5 bottom-8 py-3 rounded-2xl font-semibold bg-white shadow-lg hidden transition duration-200 hover:bg-gray-300 group-hover:block">Full Image</button>
     </div>
     <modal v-if="showModal" @close="handleClose">
-        <div class="h-full w-full">
-            <img :src="props.img" class="w-full h-full" alt="">
+        <div class="h-full w-full max-h-[40vw]">
+            <img :src="props.img" class="w-full h-full max-h-[inherit]" alt="">
         </div>
     </modal>
 </template>
