@@ -1,0 +1,5 @@
+# Ignore the folder for user-uploaded files
+uploads/
+
+# Dependencies
+/node_modules
