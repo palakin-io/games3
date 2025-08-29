@@ -85,8 +85,20 @@
                 <drag-and-drop label="Cover Image" @update:modelValue="updateImage"></drag-and-drop>
             </div>
 
+
             <div class="mb-4">
                 <select-input name="genre" v-model="game.genre" :items="genres" required="required" label="Genre" :value="game.genre"></select-input>
+            </div>
+
+            <!-- Subgenres Section -->
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">Subgenres:</label>
+                <div class="flex flex-wrap gap-2">
+                    <span v-for="sub in subgenresList" :key="sub" @click="toggleSubgenre(sub)"
+                        :class="['cursor-pointer px-3 py-1 rounded-full border', game.subgenres.includes(sub) ? 'bg-indigo-500 text-white border-indigo-700' : 'bg-gray-200 text-gray-700 border-gray-400', 'transition-colors duration-200']">
+                        {{ sub }}
+                    </span>
+                </div>
             </div>
 
 
@@ -215,7 +227,11 @@ const router = useRouter();
 const gameId = route.params.gameID;
 const gameData = ref(null);
 
+
 const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike","Visual Novel"]
+const subgenresList = [
+    "Open World", "Turn-Based", "Tactical", "Platformer", "Metroidvania", "Puzzle", "Stealth", "Sandbox", "Survival", "Horror", "Shooter", "Fighting", "Simulation", "Strategy", "Card Game", "Party", "Sports", "Rhythm", "Adventure", "Narrative", "Indie", "MMO", "Co-op", "Singleplayer", "Multiplayer"
+]
 const scores = [1, 2, 3, 4, 5,6,7,8,9,10]
 
 const game = ref({
@@ -224,6 +240,7 @@ const game = ref({
     wallpaper: null,
     description: '',
     genre: '',
+    subgenres: [],
     characters: [],
     ratings: {
         main: null,
@@ -255,6 +272,7 @@ async function fetchGameData() {
     game.value.title = gameData.value.title;
     game.value.description = gameData.value.description;
     game.value.genre = gameData.value.genre;
+
     game.value.ratings.story = gameData.value.ratings.story;
     game.value.ratings.ost = gameData.value.ratings.ost;
     game.value.ratings.art = gameData.value.ratings.art;
@@ -265,6 +283,8 @@ async function fetchGameData() {
     game.value.dateEnd = gameData.value.dateEnd;
     game.value.trailer_url = gameData.value.trailer_url;
     game.value.wiki_url = gameData.value.wiki_url;
+    game.value.subgenres = gameData.value.subgenres || [];
+
 
     imageToEdit.value = `http://localhost:3000${gameData.value.wallpaper}`;
   } catch (error) {
@@ -275,7 +295,17 @@ async function fetchGameData() {
 
 onMounted(fetchGameData)
 
-
+function toggleSubgenre(sub) {
+    const idx = game.value.subgenres.indexOf(sub);
+    if (idx === -1) {
+        game.value.subgenres.push(sub);
+        console.log(game.value.subgenres);
+        
+    } else {
+        game.value.subgenres.splice(idx, 1);
+        console.log(game.value.subgenres);
+    }
+}
 
 const config = ref({
     wrap: false, // set wrap to true only when using 'input-group'
@@ -390,11 +420,16 @@ const submitForm = async () => {
     // 2. Append Form Fields (Excluding Wallpaper)
     for (const key in game.value) {
       if (key !== 'wallpaper') {
-        if (Array.isArray(game.value[key])) {
+        if (Array.isArray(game.value[key]) && key !== 'subgenres') {
             game.value[key].forEach((item, index) => { // Iterate over the array
                 Object.keys(item).forEach(itemKey => {
                     formData.append(`${key}[${index}][${itemKey}]`, item[itemKey]);
                 });
+            });
+        } else if (key === 'subgenres') {
+            // Send subgenres as an array
+            game.value.subgenres.forEach((sub, idx) => {
+                formData.append(`subgenres[${idx}]`, sub);
             });
         } else if (key === 'ratings') {
           // Append rating fields with dot notation

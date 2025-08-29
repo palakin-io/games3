@@ -138,11 +138,30 @@ app.post('/api/games/upload', authenticateJWT, upload.single('wallpaper'), async
             return res.status(400).json({ message: 'Invalid JSON format for characters or soundtracs' });
         }
 
+        // Parse subgenres as array
+        let subgenres = [];
+        if (Array.isArray(req.body['subgenres[]'])) {
+            subgenres = req.body['subgenres[]'];
+        } else if (req.body.subgenres) {
+            if (Array.isArray(req.body.subgenres)) {
+                subgenres = req.body.subgenres;
+            } else if (typeof req.body.subgenres === 'string') {
+                subgenres = [req.body.subgenres];
+            }
+        } else {
+            // Try numbered keys (subgenres[0], subgenres[1], ...)
+            subgenres = Object.keys(req.body)
+                .filter(key => key.startsWith('subgenres['))
+                .sort()
+                .map(key => req.body[key]);
+        }
+
         const gameData = {
             title: req.body.title, 
             wallpaper: req.file ? `/uploads/${req.file.filename}` : null, // Use correct path
             description: req.body.description,
             genre: req.body.genre,
+            subgenres: subgenres,
             characters: characters,
             ratings: {},
             dateStart: dateStart,
@@ -212,6 +231,24 @@ app.put('/api/games/:gameId/edit', authenticateJWT, upload.single('wallpaper'), 
         console.log('characters: ', characters);
         console.log('ost: ', soundtracks);
 
+        // Parse subgenres as array
+        let subgenres = [];
+        if (Array.isArray(req.body['subgenres[]'])) {
+            subgenres = req.body['subgenres[]'];
+        } else if (req.body.subgenres) {
+            if (Array.isArray(req.body.subgenres)) {
+                subgenres = req.body.subgenres;
+            } else if (typeof req.body.subgenres === 'string') {
+                subgenres = [req.body.subgenres];
+            }
+        } else {
+            // Try numbered keys (subgenres[0], subgenres[1], ...)
+            subgenres = Object.keys(req.body)
+                .filter(key => key.startsWith('subgenres['))
+                .sort()
+                .map(key => req.body[key]);
+        }
+
         const gameData = {
             _id: req.body._id,
             title: req.body.title,
@@ -219,6 +256,7 @@ app.put('/api/games/:gameId/edit', authenticateJWT, upload.single('wallpaper'), 
             wallpaper: req.file ? `/uploads/${req.file.filename}` : existingGame.wallpaper,
             description: req.body.description,
             genre: req.body.genre,
+            subgenres: subgenres,
             characters: characters,
             ratings: existingGame.ratings || {}, // Use existing ratings, or initialize to empty object
             dateStart: dateStart,

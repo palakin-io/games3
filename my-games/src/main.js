@@ -14,41 +14,86 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
+// Flag to check if a token refresh is already in progress
+let isRefreshing = false;
+// Queue for requests that came in while the token was being refreshed
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Add a request interceptor
 axios.interceptors.request.use(
-  async (config) => {
+  (config) => {
+    // Do not intercept refresh token requests to avoid infinite loops
+    if (config.url.endsWith('/auth/refresh')) {
+      return config;
+    }
+
     const authStore = useAuthStore();
     const accessToken = authStore.accessToken;
-    const refreshToken = authStore.refreshToken;
+
     if (accessToken) {
       const decodedToken = jwtDecode(accessToken);
       const currentTime = Date.now() / 1000;
-      // If access token is about to expire in 2 min
-      if (decodedToken.exp < currentTime + 120 && refreshToken) {
-        try {
-          // Refresh the access token using refresh token
-          const refreshResponse = await axios.post('http://localhost:3000/api/auth/refresh', {
-            refreshToken: refreshToken,
-          });
-          const newAccessToken = refreshResponse.data.accessToken;
-          authStore.setAccessToken(newAccessToken); // Update access token in the store
-          config.headers.Authorization = `Bearer ${newAccessToken}`;
-        } catch (refreshError) {
-          console.error('Failed to refresh access token:', refreshError);
-          // On refresh failure, logout the user and redirect to login
-          authStore.clearTokens();
-          router.push('/login');
-          window.location.reload();
-          return Promise.reject(refreshError);
-        }
-      } else {
+
+      // If access token is not expiring soon, attach it and proceed
+      if (decodedToken.exp >= currentTime + 120) {
         config.headers.Authorization = `Bearer ${accessToken}`;
+        return config;
       }
+
+      // If a refresh is already in progress, queue the request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          config.headers.Authorization = `Bearer ${token}`;
+          return config;
+        });
+      }
+
+      // This is the first request with an expiring token, so start the refresh
+      isRefreshing = true;
+      const refreshToken = authStore.refreshToken;
+
+      return new Promise((resolve, reject) => {
+        axios.post('http://localhost:3000/api/auth/refresh', { refreshToken })
+          .then(response => {
+            const newAccessToken = response.data.accessToken;
+            authStore.setAccessToken(newAccessToken);
+            // Update the header for the original request
+            config.headers.Authorization = `Bearer ${newAccessToken}`;
+            // Process the queue with the new token
+            processQueue(null, newAccessToken);
+            // Resolve the original request
+            resolve(config);
+          })
+          .catch(err => {
+            // If refresh fails, reject all queued requests and logout
+            processQueue(err, null);
+            authStore.clearTokens();
+            router.push('/login');
+            window.location.reload();
+            reject(err);
+          })
+          .finally(() => {
+            // Reset the flag
+            isRefreshing = false;
+          });
+      });
     }
     return config;
   },
   (error) => {
-    // Handle request errors
     return Promise.reject(error);
   }
 );

@@ -86,6 +86,17 @@
             <select-input name="genre" v-model="game.genre" :items="genres" required="required" label="Genre" :value="game.genre"></select-input>
         </div>
 
+        <!-- Subgenres Section -->
+        <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Subgenres:</label>
+            <div class="flex flex-wrap gap-2">
+                <span v-for="sub in subgenresList" :key="sub" @click="toggleSubgenre(sub)"
+                    :class="['cursor-pointer px-3 py-1 rounded-full border', game.subgenres.includes(sub) ? 'bg-indigo-500 text-white border-indigo-700' : 'bg-gray-200 text-gray-700 border-gray-400', 'transition-colors duration-200']">
+                    {{ sub }}
+                </span>
+            </div>
+        </div>
+
 
         <div class="mb-4">
             <label for="description" class="block text-gray-700 font-medium mb-2">Scores:</label>
@@ -187,7 +198,11 @@ import SelectInput from '@/components/misc/SelectInput.vue';
 import SideSlide from '@/components/SideSlide.vue'
 import SearchInput from '@/components/misc/SearchInput.vue';
 
+
 const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
+const subgenresList = [
+    "Open World", "Turn-Based", "Tactical", "Platformer", "Metroidvania", "Puzzle", "Stealth", "Sandbox", "Survival", "Horror", "Shooter", "Fighting", "Simulation", "Strategy", "Card Game", "Party", "Sports", "Rhythm", "Adventure", "Narrative", "Indie", "MMO", "Co-op", "Singleplayer", "Multiplayer"
+]
 const scores = [1, 2, 3, 4, 5,6,7,8,9,10]
 
 const game = ref({
@@ -195,6 +210,7 @@ const game = ref({
     wallpaper: null,
     description: '',
     genre: '',
+    subgenres: [],
     characters: [],
     ratings: {
         main: null,
@@ -209,6 +225,15 @@ const game = ref({
     trailer_url: '',
     wiki_url: ''
 });
+// Subgenre badge toggle logic
+function toggleSubgenre(sub) {
+    const idx = game.value.subgenres.indexOf(sub);
+    if (idx === -1) {
+        game.value.subgenres.push(sub);
+    } else {
+        game.value.subgenres.splice(idx, 1);
+    }
+}
 
 const config = ref({
     wrap: false, // set wrap to true only when using 'input-group'
@@ -310,10 +335,10 @@ const submitForm = async () => {
         // Assign the average to the 'main' rating
         game.value.ratings.main = parseFloat(averageRating); // Store as float
 
-        // 2. Append Form Fields (Including Correctly Formatted characters and soundtracks)
+        // 2. Append Form Fields (Including Correctly Formatted characters, soundtracks, and subgenres)
         for (const key in game.value) {
             if (key !== 'wallpaper') {  
-                if (Array.isArray(game.value[key])) {
+                if (Array.isArray(game.value[key]) && key !== 'subgenres') {
                     if (key === 'characters' || key === 'soundtracks') {
                         // Correctly format characters and soundtracks as arrays of objects
                         formData.append(key, JSON.stringify(game.value[key]));
@@ -323,6 +348,11 @@ const submitForm = async () => {
                             formData.append(`${key}[${index}]`, JSON.stringify(item));
                         });
                     }
+                } else if (key === 'subgenres') {
+                    // Send subgenres as an array
+                    game.value.subgenres.forEach((sub, idx) => {
+                        formData.append(`subgenres[${idx}]`, sub);
+                    });
                 } else if (key === 'ratings') {
                     // Append rating fields with dot notation
                     for (const ratingKey in game.value.ratings) {

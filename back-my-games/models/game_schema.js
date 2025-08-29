@@ -8,6 +8,7 @@ const gameSchema = new mongoose.Schema({
   wallpaper: {type: String},
   description: String,
   genre: String,
+  subgenres: [String],
   characters: [{ 
     name: String, 
     picture_url: String,
