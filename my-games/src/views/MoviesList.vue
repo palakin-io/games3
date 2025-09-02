@@ -81,6 +81,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { MovieDb } from 'moviedb-promise';
 import { useAuthStore } from '@/stores/auth';
+import { buildApiUrl } from '@/config/api';
 
 const authStore = useAuthStore();
 
@@ -95,7 +96,7 @@ const movies = ref([]);
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/moviesByUser'); 
+    const response = await axios.get(buildApiUrl('/api/movies/user/movies')); 
     movies.value = response.data;
   } catch (error) {
     console.error('Error fetching movies:', error);
@@ -136,7 +137,7 @@ async function addMovie(movie) {
             genreIds: movie.genre_ids 
         };
 
-        const response = await axios.post('http://localhost:3000/api/movies/add', movieData);
+        const response = await axios.post(buildApiUrl('/api/movies/add'), movieData);
         console.log(response.data.message);
 
         movies.value.push({

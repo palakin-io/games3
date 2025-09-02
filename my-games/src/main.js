@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import axios from 'axios'
 import { jwtDecode } from 'jwt-decode'
 import { useAuthStore } from './stores/auth'
+import { buildApiUrl } from './config/api'
 
 import App from './App.vue'
 import router from './router'
@@ -66,7 +67,7 @@ axios.interceptors.request.use(
       const refreshToken = authStore.refreshToken;
 
       return new Promise((resolve, reject) => {
-        axios.post('http://localhost:3000/api/auth/refresh', { refreshToken })
+        axios.post(buildApiUrl('/api/auth/refresh'), { refreshToken })
           .then(response => {
             const newAccessToken = response.data.accessToken;
             authStore.setAccessToken(newAccessToken);

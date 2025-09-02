@@ -78,6 +78,7 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import { MovieDb } from 'moviedb-promise';
+import { buildApiUrl } from '@/config/api';
 
 const authStore = useAuthStore();
 const tmdbApiKey = '79283fdbaeff4888ff6da67efafe0ee4' //re: should make this secure at some point
@@ -86,7 +87,7 @@ const tmdb = new MovieDb(tmdbApiKey);
 const movies = ref([]);
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/moviesByUser'); 
+    const response = await axios.get(buildApiUrl('/api/movies/user/movies')); 
     movies.value = response.data;
     console.log(movies.value);
     
@@ -118,7 +119,7 @@ const filteredMovies = computed(() => {
 async function removeMovie(movie) {
     try {
         if (confirm(`Are you sure you want to remove "${movie.title}"?`)) {
-        const response = await axios.delete(`http://localhost:3000/api/movies/${movie._id}`);
+        const response = await axios.delete(buildApiUrl(`/api/movies/${movie._id}`));
         console.log(response.data.message); 
 
         movies.value = movies.value.filter(m => m._id !== movie._id);

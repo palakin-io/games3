@@ -216,6 +216,7 @@ import 'flatpickr/dist/flatpickr.css';
 import 'flatpickr/dist/themes/dark.css';
 import axios from 'axios';
 import { useRoute, useRouter } from 'vue-router';
+import { buildApiUrl } from '@/config/api';
 
 import FormInput from '@/components/misc/FormInput.vue';
 import DragAndDrop from '@/components/misc/DragAndDrop.vue';
@@ -259,7 +260,7 @@ const game = ref({
 const imageToEdit = ref(null);
 async function fetchGameData() {
   try {
-    const response = await axios.get(`http://localhost:3000/api/games/${gameId}`, {
+    const response = await axios.get(buildApiUrl(`/api/games/${gameId}`), {
       headers: {
         'Access-Control-Allow-Origin': '*' // Allows requests from any origin (adjust in production)
       }
@@ -286,7 +287,7 @@ async function fetchGameData() {
     game.value.subgenres = gameData.value.subgenres || [];
 
 
-    imageToEdit.value = `http://localhost:3000${gameData.value.wallpaper}`;
+    imageToEdit.value = `${buildApiUrl('')}${gameData.value.wallpaper}`;
   } catch (error) {
     console.error('Error fetching game data:', error);
     // Handle error (e.g., set an error state for display)
@@ -468,7 +469,7 @@ const submitForm = async () => {
         formData.append('wallpaper', game.value.wallpaper);
     }
 
-    const response = await axios.put(`http://localhost:3000/api/games/${gameId}/edit`, formData, {
+    const response = await axios.put(buildApiUrl(`/api/games/edit`), formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

@@ -1,470 +1,88 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const multer = require('multer');
 const path = require('path');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const fs = require('fs');
+const http = require('http');
+const socketIo = require('socket.io');
 
-const secret = '12340789';
+// Import configurations and services
+const config = require('./config');
+const { connectDB } = require('./config/database');
+const routes = require('./routes');
+const { setupChatbotSocket } = require('./socket/chatbot');
 
-const Game = require('./models/game_schema');
-const User = require('./models/user_schema');
-const Movie = require('./models/movie_schema');
-// Add RefreshToken model
-const refreshTokenSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  token: { type: String, required: true },
-  expiresAt: { type: Date, required: true }
-});
-const RefreshToken = mongoose.model('RefreshToken', refreshTokenSchema);
-
-
+// Import models
+require('./models/game_schema');
+require('./models/movie_schema');
+require('./models/user_schema');
+require('./models/refreshToken');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: config.corsOrigin,
+    methods: ["GET", "POST"]
+  }
+});
+
+// Middleware
 app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// MongoDB Connection URI
-const uri = "mongodb+srv://polakitow:rasalgul32@gamecluster.emb1xpd.mongodb.net/games_db?retryWrites=true&w=majority&appName=GameCluster";
-const clientOptions = { serverApi: { version: '1', strict: true, deprecationErrors: true } };
+// API Routes
+app.use('/api', routes);
 
-// Connect to MongoDB
-mongoose.connect(uri, clientOptions)
-    .then(() => {
-        console.log("You successfully connected to MongoDB!");
-        app.listen(port, () => {
-            console.log(`Server running on port ${port}`);
-        });
-    })
-    .catch(err => console.error('MongoDB connection error:', err));
+// Setup Socket.io chatbot
+setupChatbotSocket(io);
 
-// Middleware for parsing JSON and URL-encoded data
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
-// Authentication Middleware
-function authenticateJWT(req, res, next) {
-    const authHeader = req.headers.authorization;
-    
-    if (authHeader) {
-      const token = authHeader.split(' ')[1]; // Extract the token from the Bearer header
-  
-      jwt.verify(token, secret, (err, user) => {
-        if (err) {
-          return res.status(403).json({ message: 'Invalid token' });
-        }
-        req.user = user; // Attach the user data to the request object for later use
-        next(); // Allow the request to proceed to the next middleware or route handler
-      });
-    } else {
-      res.sendStatus(401); // Unauthorized if no token is provided
+// Start server
+async function startServer() {
+  try {
+    // Connect to database
+    const dbConnected = await connectDB();
+    if (!dbConnected) {
+      console.error('❌ Failed to connect to database. Exiting...');
+      process.exit(1);
     }
+
+    // Start HTTP server
+    server.listen(config.port, () => {
+      console.log(`🚀 Server running on port ${config.port}`);
+      console.log(`🌐 CORS enabled for: ${config.corsOrigin}`);
+      console.log('✅ All services initialized successfully!');
+    });
+
+  } catch (error) {
+    console.error('❌ Server startup failed:', error);
+    process.exit(1);
+  }
 }
 
-// API Routes
-app.get('/api/games/:gameId', async (req, res) => {
-    try {
-        const gameId = req.params.gameId;
-        const game = await Game.findById(gameId);
-
-        if (!game) {
-            return res.status(404).json({ message: 'Game not found' });
-        }
-
-        res.json(game);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-app.get('/api/games', async (req, res) => {
-    try {
-        const games = await Game.find().sort({ 'ratings.main': -1 }); // Fetch all games from the database and sort
-        res.json(games);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-app.get('/api/gamesByUser', authenticateJWT, async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const games = await Game.find({ creator: userId }).sort({ 'ratings.main': -1 });
-        res.json(games);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// Set up storage for Multer
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Store files in the 'uploads' folder
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname); // Unique filename for each image
-    }
-});
-
-const upload = multer({ storage: storage });
-app.post('/api/games/upload', authenticateJWT, upload.single('wallpaper'), async (req, res) => {
-    try {
-        // console.log('Received game data:', req.body); // Log to check incoming data
-        // console.log('Received file data:', req.file);
-        // Convert date strings to Date objects
-        const dateStart = new Date(req.body.dateStart);
-        const dateEnd = new Date(req.body.dateEnd);
-
-        // Validate date objects
-        if (isNaN(dateStart.getTime()) || isNaN(dateEnd.getTime())) {
-            return res.status(400).json({ message: 'Invalid date format. Please use YYYY-MM-DD' });
-        }
-
-        let characters = [];
-        let soundtracks = [];
-        
-        try {
-            characters = JSON.parse(req.body.characters || '[]'); // Parse with error handling
-            soundtracks = JSON.parse(req.body.soundtracks || '[]');
-        } catch (error) {
-            return res.status(400).json({ message: 'Invalid JSON format for characters or soundtracs' });
-        }
-
-        // Parse subgenres as array
-        let subgenres = [];
-        if (Array.isArray(req.body['subgenres[]'])) {
-            subgenres = req.body['subgenres[]'];
-        } else if (req.body.subgenres) {
-            if (Array.isArray(req.body.subgenres)) {
-                subgenres = req.body.subgenres;
-            } else if (typeof req.body.subgenres === 'string') {
-                subgenres = [req.body.subgenres];
-            }
-        } else {
-            // Try numbered keys (subgenres[0], subgenres[1], ...)
-            subgenres = Object.keys(req.body)
-                .filter(key => key.startsWith('subgenres['))
-                .sort()
-                .map(key => req.body[key]);
-        }
-
-        const gameData = {
-            title: req.body.title, 
-            wallpaper: req.file ? `/uploads/${req.file.filename}` : null, // Use correct path
-            description: req.body.description,
-            genre: req.body.genre,
-            subgenres: subgenres,
-            characters: characters,
-            ratings: {},
-            dateStart: dateStart,
-            dateEnd: dateEnd,
-            soundtracks: soundtracks,
-            trailer_url: req.body.trailer_url,
-            wiki_url: req.body.wiki_url,
-            creator: req.user.userId
-        };
-
-        // Extract individual rating values from req.body
-        for (const ratingKey of ['main', 'story', 'ost', 'art', 'gameplay']) {
-            if (ratingKey == 'main') {
-                gameData.ratings[ratingKey] = parseFloat(req.body[`ratings.${ratingKey}`]) || 0; // Use parseFloat to allow decimals
-            } else {
-                gameData.ratings[ratingKey] = parseInt(req.body[`ratings.${ratingKey}`], 10) || 0;
-            }
-        }
-
-        // console.log('Game data after parsing:', gameData); // Log the parsed gameData
-        
-        //Validate fields according to schema
-        const newGame = new Game(gameData);
-        await newGame.save();
-
-        res.status(201).json({ message: 'Game uploaded successfully', gameId: newGame._id });
-    } catch (error) {
-        console.error(error);
-
-        // Send specific error message for validation errors
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: 'Validation error', errors: error.errors });
-        }
-
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-app.put('/api/games/:gameId/edit', authenticateJWT, upload.single('wallpaper'), async (req, res) => {
-    try {
-        console.log('Received game update data:', req.body); // Log to check incoming data
-        console.log('Received file update data:', req.file);
-        // Convert date strings to Date objects
-        const dateStart = new Date(req.body.dateStart);
-        const dateEnd = new Date(req.body.dateEnd);
-
-        // Validate date objects:
-        if (isNaN(dateStart.getTime()) || isNaN(dateEnd.getTime())) {
-          return res.status(400).json({ message: 'Invalid date format. Please use YYYY-MM-DD' });
-        }
-
-        const gameId = req.body._id;
-        const existingGame = await Game.findById(gameId); // Fetch existing game data
-        console.log('game ID: ', gameId);
-        console.log('existing game: ', existingGame);
-
-        if (!existingGame) {
-            return res.status(404).json({ message: 'Game not found' });
-        }
-        
-        let characters = [];
-        let soundtracks = [];
-
-        characters = req.body.characters;
-        soundtracks = req.body.soundtracks;
-
-        console.log('characters: ', characters);
-        console.log('ost: ', soundtracks);
-
-        // Parse subgenres as array
-        let subgenres = [];
-        if (Array.isArray(req.body['subgenres[]'])) {
-            subgenres = req.body['subgenres[]'];
-        } else if (req.body.subgenres) {
-            if (Array.isArray(req.body.subgenres)) {
-                subgenres = req.body.subgenres;
-            } else if (typeof req.body.subgenres === 'string') {
-                subgenres = [req.body.subgenres];
-            }
-        } else {
-            // Try numbered keys (subgenres[0], subgenres[1], ...)
-            subgenres = Object.keys(req.body)
-                .filter(key => key.startsWith('subgenres['))
-                .sort()
-                .map(key => req.body[key]);
-        }
-
-        const gameData = {
-            _id: req.body._id,
-            title: req.body.title,
-            // If a new wallpaper is uploaded, update the URL, otherwise, keep the old one
-            wallpaper: req.file ? `/uploads/${req.file.filename}` : existingGame.wallpaper,
-            description: req.body.description,
-            genre: req.body.genre,
-            subgenres: subgenres,
-            characters: characters,
-            ratings: existingGame.ratings || {}, // Use existing ratings, or initialize to empty object
-            dateStart: dateStart,
-            dateEnd: dateEnd,
-            soundtracks: soundtracks,
-            trailer_url: req.body.trailer_url,
-            wiki_url: req.body.wiki_url,
-        };
-
-        // Update individual rating values 
-        for (const ratingKey of ['main', 'story', 'ost', 'art', 'gameplay']) {
-            const ratingValue = req.body[`ratings.${ratingKey}`]; 
-            if (ratingValue !== undefined && !isNaN(ratingValue)) {
-                gameData.ratings[ratingKey] = ratingKey === 'main'
-                    ? parseFloat(ratingValue)
-                    : parseInt(ratingValue, 10);
-            }
-        }
-
-        console.log('Game data after parsing:', gameData); // Log the parsed gameData
-
-        // Find and update the game using its ID
-        const updatedGame = await Game.findByIdAndUpdate(gameId, gameData, { new: true });
-
-        // Delete the old wallpaper image (if a new one was uploaded)
-        if (req.file && existingGame.wallpaper) {
-            const oldImagePath = path.join(__dirname, existingGame.wallpaper);
-            fs.unlink(oldImagePath, (err) => {
-                if (err) console.error('Error deleting old image:', err);
-            });
-        }
-
-        if (!updatedGame) {
-            return res.status(404).json({ message: 'Game not found' });
-        }
-
-        res.json({ message: 'Game updated successfully', game: updatedGame });
-    } catch (error) {
-        console.error(error);
-
-        // Send specific error message for validation errors
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: 'Validation error', errors: error.errors });
-        }
-
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// Route to save movie data to MongoDB
-app.post('/api/movies/add', authenticateJWT, async (req, res) => { 
-    try {
-      const { tmdbId, title, posterPath, score, genreIds } = req.body;
-  
-      // Create a new movie object
-      const newMovie = new Movie({
-        tmdbId,
-        title,
-        posterPath,
-        score, 
-        genreIds,
-        userId: req.user.userId, 
-      });
-  
-      // Save the movie data to the database
-      await newMovie.save();
-  
-      res.status(201).json({ message: 'Movie saved successfully' }); 
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error saving movie' });
-    }
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
   });
-
-app.get('/api/moviesByUser', authenticateJWT, async (req, res) => {
-    try {
-        const user = req.user.userId;
-        const movies = await Movie.find({ userId: user }).sort({ 'score': -1 });
-        res.json(movies);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
 });
 
-app.delete('/api/movies/:movieId', authenticateJWT, async (req, res) => {
-    try {
-      const movieId = req.params.movieId; 
-      const userId = req.user.userId;
-  
-      const movie = await Movie.findOne({ _id: movieId, userId: userId });
-      if (!movie) {
-        return res.status(404).json({ message: 'Movie not found or you are not authorized to delete it' });
-      }
-  
-      await Movie.findByIdAndDelete(movieId);
-  
-      res.json({ message: 'Movie deleted successfully' });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error deleting movie' });
-    }
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 
-// Registration Route
-app.post('/api/users/register', upload.none(), async (req, res) => {
-    try {
-        console.log(req.body);
-        const { username, email, password } = req.body;
-
-        console.log('username: ', username);
-        console.log('email: ', email);
-        console.log('password: ', password);
-
-        // Check if user already exists
-        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-        if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
-
-        // Hash the password
-        const saltRounds = 10; // stronger hashing
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-        // Create a new user object
-        const newUser = new User({
-            username,
-            email,
-            password: hashedPassword
-        });
-
-        // Save the user to the database
-        await newUser.save();
-
-        res.status(201).json({ message: 'User registered successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-
-// Login Route
-app.post('/api/users/login', async (req, res) => {
-    try {
-        const { login, password } = req.body;
-
-        // Find the user by either username or email
-        const user = await User.findOne({
-            $or: [{ username: login }, { email: login }] 
-        });
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        // Compare the provided password with the hashed password
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        if (!passwordMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        // Create and sign access and refresh tokens
-        const accessToken = jwt.sign({ userId: user._id, username: user.username, email: user.email }, secret, { expiresIn: '15m' }); // 15 min expiration
-        const refreshTokenValue = jwt.sign({ userId: user._id }, secret, { expiresIn: '7d' }); // 7 days expiration
-
-        // Store refresh token in DB
-        const refreshTokenDoc = new RefreshToken({
-          userId: user._id,
-          token: refreshTokenValue,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        });
-        await refreshTokenDoc.save();
-
-        res.json({ accessToken, refreshToken: refreshTokenValue });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-//refresh token
-app.post('/api/auth/refresh', async (req, res) => {
-  try {
-    const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(400).json({ message: 'Refresh token required' });
-    }
-    // Verify refresh token
-    let payload;
-    try {
-      payload = jwt.verify(refreshToken, secret);
-    } catch (err) {
-      return res.status(403).json({ message: 'Invalid refresh token' });
-    }
-    // Check if refresh token exists in DB and is not expired
-    const tokenDoc = await RefreshToken.findOne({ token: refreshToken, userId: payload.userId });
-    if (!tokenDoc || tokenDoc.expiresAt < new Date()) {
-      return res.status(403).json({ message: 'Refresh token expired or not found' });
-    }
-    // Issue new access token
-    const user = await User.findById(payload.userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    const newAccessToken = jwt.sign({ userId: user._id, username: user.username, email: user.email }, secret, { expiresIn: '15m' });
-    res.json({ accessToken: newAccessToken });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// Start the server
+startServer();

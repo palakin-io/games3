@@ -163,6 +163,7 @@ import { useRoute } from 'vue-router';
 import axios from 'axios'
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { buildApiUrl } from '@/config/api';
 
 import Cards from '@/components/CardView.vue'
 import Modal from '@/components/Modal.vue';
@@ -183,14 +184,14 @@ const trailerURL = ref('');
 const wallpaperImg = ref("");
 async function fetchGameData() {
   try {
-    const response = await axios.get(`http://localhost:3000/api/games/${gameId}`, {
+    const response = await axios.get(buildApiUrl(`/api/games/${gameId}`), {
       headers: {
         'Access-Control-Allow-Origin': '*' // Allows requests from any origin (adjust in production)
       }
     });
     gameData.value = response.data;
     trailerURL.value = embedVideoUrl(gameData.value.trailer_url)
-    wallpaperImg.value = `http://localhost:3000${gameData.value.wallpaper}`;
+    wallpaperImg.value = `${buildApiUrl('')}${gameData.value.wallpaper}`;
     console.log(gameData.value);
     console.log("gameID: " + gameId);
   } catch (error) {

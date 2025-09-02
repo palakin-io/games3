@@ -71,6 +71,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import gsap from 'gsap';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
+import { buildApiUrl } from '@/config/api';
 
 const authStore = useAuthStore();
 
@@ -79,7 +80,7 @@ const displayedCount = ref(10); // Number of games to display
 
 async function fetchGames() {
   try {
-    const response = await axios.get('http://localhost:3000/api/gamesByUser'); // Fetch all games by user
+    const response = await axios.get(buildApiUrl('/api/games/user/games')); // Fetch all games by user
     games.value = response.data;
   } catch (error) {
     console.error('Error fetching games:', error.response ? error.response.data : error.message);

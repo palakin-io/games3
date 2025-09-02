@@ -104,6 +104,7 @@ import RegistrationForm from './RegistrationForm.vue'
 import { inject } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth.js'
+import { buildApiUrl } from '@/config/api';
 
 
 
@@ -120,7 +121,7 @@ const password = ref('');
 const authStore = useAuthStore();
 async function login() {
     try {
-        const response = await axios.post('http://localhost:3000/api/users/login', { login: loginName.value, password: password.value });
+        const response = await axios.post(buildApiUrl('/api/users/login'), { login: loginName.value, password: password.value });
         const { accessToken, refreshToken } = response.data;
         authStore.setTokens({ accessToken, refreshToken });
         closeModal();

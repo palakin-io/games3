@@ -190,6 +190,7 @@ import 'flatpickr/dist/flatpickr.css';
 import 'flatpickr/dist/themes/dark.css';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { buildApiUrl } from '@/config/api';
 
 
 import FormInput from '@/components/misc/FormInput.vue';
@@ -392,7 +393,7 @@ const submitForm = async () => {
         console.log('FormData:', formData);  // Log the FormData object before sending
 
 
-        const response = await axios.post('http://localhost:3000/api/games/upload', formData, { 
+        const response = await axios.post(buildApiUrl('/api/games/upload'), formData, { 
             headers: {
                 'Content-Type': 'multipart/form-data' // Important for file uploads
             }

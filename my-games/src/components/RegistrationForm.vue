@@ -74,6 +74,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { buildApiUrl } from '@/config/api';
 
 const userName = ref('');
 const password = ref('');
@@ -102,7 +103,7 @@ async function register() {
         formData.append('password', password.value);
         formData.append('username', userName.value);
 
-        const response = await axios.post('http://localhost:3000/api/users/register', formData, {
+        const response = await axios.post(buildApiUrl('/api/users/register'), formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
