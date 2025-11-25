@@ -8,8 +8,8 @@ const API_CONFIG = {
   // API endpoints
   ENDPOINTS: {
     // Authentication
-    LOGIN: '/api/users/login',
-    REGISTER: '/api/users/register',
+    LOGIN: '/api/auth/login',
+    REGISTER: '/api/auth/register',
     REFRESH_TOKEN: '/api/auth/refresh',
     
     // Games

@@ -103,7 +103,7 @@ async function register() {
         formData.append('password', password.value);
         formData.append('username', userName.value);
 
-        const response = await axios.post(buildApiUrl('/api/users/register'), formData, {
+        const response = await axios.post(buildApiUrl('/api/auth/register'), formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }

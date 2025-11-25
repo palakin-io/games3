@@ -121,7 +121,7 @@ const password = ref('');
 const authStore = useAuthStore();
 async function login() {
     try {
-        const response = await axios.post(buildApiUrl('/api/users/login'), { login: loginName.value, password: password.value });
+        const response = await axios.post(buildApiUrl('/api/auth/login'), { login: loginName.value, password: password.value });
         const { accessToken, refreshToken } = response.data;
         authStore.setTokens({ accessToken, refreshToken });
         closeModal();
