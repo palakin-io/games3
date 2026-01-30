@@ -8,8 +8,8 @@ export const ENV_CONFIG = {
   
   // Production (update these when deploying)
   production: {
-    API_URL: 'https://your-production-domain.com',
-    SOCKET_URL: 'https://your-production-domain.com',
+    API_URL: import.meta.env.VITE_API_URL || 'https://your-production-domain.com',
+    SOCKET_URL: import.meta.env.VITE_SOCKET_URL || 'https://your-production-domain.com',
   }
 };
 
