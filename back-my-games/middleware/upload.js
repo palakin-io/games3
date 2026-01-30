@@ -1,14 +1,23 @@
 const multer = require('multer');
-const path = require('path');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const config = require('../config');
 
-// Set up storage for Multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Store files in the 'uploads' folder
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: config.cloudinary.cloud_name,
+  api_key: config.cloudinary.api_key,
+  api_secret: config.cloudinary.api_secret
+});
+
+// Set up storage for Multer (Cloudinary)
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'my-games-uploads', // Folder name in Cloudinary
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'gif'],
+    transformation: [{ width: 1000, crop: "limit" }] // Optimize image size
   },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname); // Unique filename for each image
-  }
 });
 
 const upload = multer({ storage: storage });

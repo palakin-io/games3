@@ -221,7 +221,15 @@ async function fetchGameData() {
         });
         gameData.value = response.data;
         trailerURL.value = embedVideoUrl(gameData.value.trailer_url)
-        wallpaperImg.value = `${buildApiUrl('')}${gameData.value.wallpaper}`;
+
+        // Handle both relative (local) and absolute (Cloudinary) URLs
+        const wallpaperPath = gameData.value.wallpaper;
+        if (wallpaperPath && (wallpaperPath.startsWith('http') || wallpaperPath.startsWith('https'))) {
+            wallpaperImg.value = wallpaperPath;
+        } else {
+            wallpaperImg.value = `${buildApiUrl('')}${wallpaperPath}`;
+        }
+
         console.log(gameData.value);
         console.log("gameID: " + gameId);
     } catch (error) {

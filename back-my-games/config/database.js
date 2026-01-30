@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const uri = "mongodb+srv://polakitow:rasalgul32@gamecluster.emb1xpd.mongodb.net/games_db?retryWrites=true&w=majority&appName=GameCluster";
+const uri = process.env.MONGODB_URI || "mongodb+srv://polakitow:rasalgul32@gamecluster.emb1xpd.mongodb.net/games_db?retryWrites=true&w=majority&appName=GameCluster";
 const clientOptions = { 
   serverApi: { 
     version: '1', 

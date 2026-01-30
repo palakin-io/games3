@@ -1,5 +1,29 @@
 const express = require('express');
 const router = express.Router();
+const cloudinary = require('cloudinary').v2;
+const config = require('../config');
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: config.cloudinary.cloud_name,
+  api_key: config.cloudinary.api_key,
+  api_secret: config.cloudinary.api_secret
+});
+
+// Helper to extract public ID from Cloudinary URL
+function extractPublicId(url) {
+  try {
+    const parts = url.split('/');
+    const filenameWithExtension = parts.pop();
+    const folder = parts.pop(); // Assuming structure .../folder/filename.ext
+    const publicIdWithExtension = `${folder}/${filenameWithExtension}`;
+    const publicId = publicIdWithExtension.split('.').slice(0, -1).join('.');
+    return publicId;
+  } catch (error) {
+    console.error('Error extracting public ID:', error);
+    return null;
+  }
+}
 const { authenticateJWT } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 const Game = require('../models/game_schema');
@@ -85,7 +109,7 @@ router.post('/upload', authenticateJWT, upload.single('wallpaper'), async (req, 
 
     const gameData = {
       title: req.body.title, 
-      wallpaper: req.file ? `/uploads/${req.file.filename}` : null,
+      wallpaper: req.file ? req.file.path : null,
       description: req.body.description,
       genre: req.body.genre,
       subgenres: subgenres,
@@ -166,7 +190,7 @@ router.put('/edit', authenticateJWT, upload.single('wallpaper'), async (req, res
     const gameData = {
       _id: req.body._id,
       title: req.body.title,
-      wallpaper: req.file ? `/uploads/${req.file.filename}` : existingGame.wallpaper,
+      wallpaper: req.file ? req.file.path : existingGame.wallpaper,
       description: req.body.description,
       genre: req.body.genre,
       subgenres: subgenres,
@@ -191,12 +215,18 @@ router.put('/edit', authenticateJWT, upload.single('wallpaper'), async (req, res
 
     const updatedGame = await Game.findByIdAndUpdate(gameId, gameData, { new: true });
 
-    // Delete the old wallpaper image (if a new one was uploaded)
+    // Delete the old wallpaper image from Cloudinary (if a new one was uploaded)
     if (req.file && existingGame.wallpaper) {
-      const oldImagePath = path.join(__dirname, '..', existingGame.wallpaper);
-      fs.unlink(oldImagePath, (err) => {
-        if (err) console.error('Error deleting old image:', err);
-      });
+       // Check if it's a Cloudinary URL (basic check)
+       if (existingGame.wallpaper.includes('cloudinary.com')) {
+          const publicId = extractPublicId(existingGame.wallpaper);
+          if (publicId) {
+             cloudinary.uploader.destroy(publicId, (error, result) => {
+                if (error) console.error('Error deleting old image from Cloudinary:', error);
+                else console.log('Deleted old image from Cloudinary:', result);
+             });
+          }
+       }
     }
 
     if (!updatedGame) {
