@@ -5,10 +5,18 @@ const User = require('../models/user_schema');
 const Movie = require('../models/movie_schema');
 
 // Initialize Groq client
-// Ensure GROQ_API_KEY is set in your .env variables
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
-});
+let groq = null;
+try {
+  if (process.env.GROQ_API_KEY) {
+    groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY
+    });
+  } else {
+    console.warn('⚠️ GROQ_API_KEY is missing. Chatbot will be disabled.');
+  }
+} catch (error) {
+  console.warn('⚠️ Failed to initialize Groq client:', error.message);
+}
 
 // Helper: Get global stats
 async function getGlobalStats() {
@@ -74,8 +82,8 @@ async function getTopGames() {
 
 async function generateChatbotResponse(userMessage) {
   try {
-    if (!process.env.GROQ_API_KEY) {
-        return "I'm sorry, I cannot think right now because my brain (API Key) is missing.";
+    if (!groq) {
+        return "I'm sorry, I cannot think right now because my brain (API Key) is missing from the server configuration.";
     }
 
     // 1. Retrieval (RAG)

@@ -26,6 +26,10 @@ const io = socketIo(server, {
 });
 
 // Middleware
+app.use((req, res, next) => {
+  console.log(`📨 Request: ${req.method} ${req.url} | Origin: ${req.headers.origin}`);
+  next();
+});
 app.use(cors({
   origin: config.corsOrigin,
   credentials: true
