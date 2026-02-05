@@ -1,9 +1,16 @@
 require('dotenv').config();
+
+const defaultOrigins = ['http://localhost:5173', 'https://games3.vercel.app'];
+const envOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) 
+  : [];
+
+// specific array merge to ensure we always have the defaults
+const corsOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+
 module.exports = {
   port: process.env.PORT || 3000,
-  corsOrigin: process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) 
-    : ['http://localhost:5173', 'https://games3.vercel.app'],
+  corsOrigin: corsOrigins,
   
   // Cloudinary Configuration
   cloudinary: {
