@@ -1,16 +1,13 @@
 <template>
   <div class="chatbot-container">
     <!-- Floating Chat Button -->
-    <button 
-      @click="toggleChat" 
-      class="chat-button"
-      :class="{ 'chat-button--active': isChatOpen }"
-    >
+    <button @click="toggleChat" class="chat-button" :class="{ 'chat-button--active': isChatOpen }">
       <svg v-if="!isChatOpen" class="chat-icon" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
       </svg>
       <svg v-else class="chat-icon" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        <path
+          d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
       </svg>
     </button>
 
@@ -20,38 +17,24 @@
         <h3>Gaming Assistant</h3>
         <button @click="toggleChat" class="close-button">×</button>
       </div>
-      
+
       <div class="chat-messages" ref="messagesContainer">
-        <div 
-          v-for="(message, index) in messages" 
-          :key="index" 
-          class="message"
-          :class="message.type"
-        >
+        <div v-for="(message, index) in messages" :key="index" class="message" :class="message.type">
           <div class="message-content">{{ message.text }}</div>
           <div class="message-time">{{ formatTime(message.timestamp) }}</div>
         </div>
       </div>
-      
+
       <div class="chat-input-container">
-        <input 
-          v-model="newMessage" 
-          @keyup.enter="sendMessage"
-          placeholder="Type your message..."
-          class="chat-input"
-          :disabled="!isConnected"
-        />
-        <button 
-          @click="sendMessage" 
-          class="send-button"
-          :disabled="!isConnected || !newMessage.trim()"
-        >
+        <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type your message..." class="chat-input"
+          :disabled="!isConnected" />
+        <button @click="sendMessage" class="send-button" :disabled="!isConnected || !newMessage.trim()">
           <svg class="send-icon" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
           </svg>
         </button>
       </div>
-      
+
       <div v-if="!isConnected" class="connection-status">
         Connecting...
       </div>
@@ -68,12 +51,51 @@ const isChatOpen = ref(false)
 const messages = ref([])
 const newMessage = ref('')
 const isConnected = ref(false)
+const isTyping = ref(false)
 const socket = ref(null)
 const messagesContainer = ref(null)
+
+const initSocket = () => {
+  if (socket.value) return
+
+  socket.value = io(API_CONFIG.SOCKET_URL)
+
+  socket.value.on('connect', () => {
+    isConnected.value = true
+    // Only add greeting if it's the first time connecting or no messages
+    if (messages.value.length === 0) {
+      messages.value.push({
+        text: 'Hello! I\'m your gaming assistant. How can I help you today?',
+        type: 'bot',
+        timestamp: new Date()
+      })
+    }
+  })
+
+  socket.value.on('disconnect', () => {
+    isConnected.value = false
+  })
+
+  socket.value.on('chat_response', (data) => {
+    isTyping.value = false
+    messages.value.push({
+      text: data.message,
+      type: 'bot',
+      timestamp: new Date(data.timestamp)
+    })
+
+    nextTick(() => {
+      scrollToBottom()
+    })
+  })
+}
 
 const toggleChat = () => {
   isChatOpen.value = !isChatOpen.value
   if (isChatOpen.value) {
+    if (!socket.value) {
+      initSocket()
+    }
     nextTick(() => {
       scrollToBottom()
     })
@@ -82,17 +104,18 @@ const toggleChat = () => {
 
 const sendMessage = () => {
   if (!newMessage.value.trim() || !isConnected.value) return
-  
+
   const messageData = {
     text: newMessage.value,
     type: 'user',
     timestamp: new Date()
   }
-  
+
   messages.value.push(messageData)
   socket.value.emit('chat_message', { message: newMessage.value })
   newMessage.value = ''
-  
+  isTyping.value = true
+
   nextTick(() => {
     scrollToBottom()
   })
@@ -105,41 +128,11 @@ const scrollToBottom = () => {
 }
 
 const formatTime = (timestamp) => {
-  return new Date(timestamp).toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(timestamp).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
   })
 }
-
-onMounted(() => {
-  // Initialize socket connection
-  socket.value = io(API_CONFIG.SOCKET_URL)
-  
-  socket.value.on('connect', () => {
-    isConnected.value = true
-    messages.value.push({
-      text: 'Hello! I\'m your gaming assistant. How can I help you today?',
-      type: 'bot',
-      timestamp: new Date()
-    })
-  })
-  
-  socket.value.on('disconnect', () => {
-    isConnected.value = false
-  })
-  
-  socket.value.on('chat_response', (data) => {
-    messages.value.push({
-      text: data.message,
-      type: 'bot',
-      timestamp: new Date(data.timestamp)
-    })
-    
-    nextTick(() => {
-      scrollToBottom()
-    })
-  })
-})
 
 onUnmounted(() => {
   if (socket.value) {
@@ -363,12 +356,12 @@ onUnmounted(() => {
     height: 400px;
     left: -20px;
   }
-  
+
   .chat-button {
     width: 50px;
     height: 50px;
   }
-  
+
   .chat-icon {
     width: 20px;
     height: 20px;
