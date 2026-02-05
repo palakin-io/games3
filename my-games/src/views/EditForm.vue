@@ -297,11 +297,7 @@ const game = ref({
 const imageToEdit = ref(null);
 async function fetchGameData() {
     try {
-        const response = await axios.get(buildApiUrl(`/api/games/${gameId}`), {
-            headers: {
-                'Access-Control-Allow-Origin': '*' // Allows requests from any origin (adjust in production)
-            }
-        });
+        const response = await axios.get(buildApiUrl(`/api/games/${gameId}`));
         gameData.value = response.data;
         console.log(gameData.value);
         console.log("gameID: " + gameId);
