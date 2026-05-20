@@ -5,6 +5,9 @@ const jwt = require('jsonwebtoken');
 const { upload } = require('../middleware/upload');
 const User = require('../models/user_schema');
 const RefreshToken = require('../models/refreshToken');
+const { OAuth2Client } = require('google-auth-library');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const secret = '12340789';
 
@@ -75,6 +78,71 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Google Login
+router.post('/google-login', async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'No token provided' });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    
+    if (!payload || !payload.email) {
+      return res.status(401).json({ message: 'Invalid Google token' });
+    }
+
+    const email = payload.email;
+    const name = payload.name || payload.email.split('@')[0];
+
+    // Find the user by email
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user. Generate random secure password.
+      const randomPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      
+      // Ensure unique username
+      let baseUsername = name.replace(/\s+/g, '').toLowerCase();
+      let uniqueUsername = baseUsername;
+      let count = 1;
+      while (await User.findOne({ username: uniqueUsername })) {
+        uniqueUsername = `${baseUsername}${count}`;
+        count++;
+      }
+
+      user = new User({
+        username: uniqueUsername,
+        email: email,
+        password: hashedPassword
+      });
+      await user.save();
+    }
+
+    // Generate tokens
+    const accessToken = jwt.sign({ userId: user._id, username: user.username, email: user.email }, secret, { expiresIn: '15m' });
+    const refreshTokenValue = jwt.sign({ userId: user._id }, secret, { expiresIn: '7d' });
+
+    // Store refresh token in DB
+    const refreshTokenDoc = new RefreshToken({
+      userId: user._id,
+      token: refreshTokenValue,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    });
+    await refreshTokenDoc.save();
+
+    res.json({ accessToken, refreshToken: refreshTokenValue });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ message: 'Google login failed' });
   }
 });
 

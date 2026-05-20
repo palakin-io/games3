@@ -31,8 +31,7 @@ const router = useRouter();
 
 const logout = () => {
     authStore.clearTokens();
-    router.push('/');
-    window.location.reload();
+    window.location.href = '/';
 }
 </script>
 

@@ -7,6 +7,7 @@ import { buildApiUrl } from './config/api'
 
 import App from './App.vue'
 import router from './router'
+import vue3GoogleLogin from 'vue3-google-login'
 
 import './styles.css'
 
@@ -14,6 +15,9 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
+app.use(vue3GoogleLogin, {
+  clientId: '765341661166-hsjepdcrmue35fmbh2cqk0sfhr76q7aa.apps.googleusercontent.com'
+})
 
 // Flag to check if a token refresh is already in progress
 let isRefreshing = false;

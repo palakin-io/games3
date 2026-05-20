@@ -21,7 +21,8 @@
     "socket.io-client": "^4.8.1",
     "vue": "^3.4.21",
     "vue-flatpickr-component": "^11.0.5",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.3.0",
+    "vue3-google-login": "^2.1.4"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",

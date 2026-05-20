@@ -9,6 +9,7 @@ const API_CONFIG = {
   ENDPOINTS: {
     // Authentication
     LOGIN: '/api/auth/login',
+    GOOGLE_LOGIN: '/api/auth/google-login',
     REGISTER: '/api/auth/register',
     REFRESH_TOKEN: '/api/auth/refresh',
     

@@ -42,7 +42,6 @@ const suggestions = ref([]);
 const debounceSearch = debounce((searchQuery) => searchGames(searchQuery), 700);
 
 async function searchGames(searchQuery) {
-    debugger
     if (searchQuery < 3) {
         suggestions.value = [];
         return;

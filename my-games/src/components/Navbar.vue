@@ -76,8 +76,7 @@ const router = useRouter();
 const logout = () => {
     authStore.clearTokens();
     closeNavigation();
-    router.push('/');
-    window.location.reload();
+    window.location.href = '/';
 }
 </script>
 
