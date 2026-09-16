@@ -245,4 +245,56 @@ router.put('/edit', authenticateJWT, upload.single('wallpaper'), async (req, res
   }
 });
 
+// Delete game
+router.delete('/:gameId', authenticateJWT, async (req, res) => {
+  try {
+    const gameId = req.params.gameId;
+    
+    // Validate ObjectId format
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(gameId)) {
+      return res.status(400).json({ message: 'Invalid game ID format' });
+    }
+
+    const game = await Game.findById(gameId);
+
+    if (!game) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+
+
+    // Verify creator authorization
+    if (game.creator && game.creator.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'Unauthorized to delete this game' });
+    }
+
+    // Clean up wallpaper asset if needed
+    if (game.wallpaper) {
+      if (game.wallpaper.includes('cloudinary.com')) {
+        const publicId = extractPublicId(game.wallpaper);
+        if (publicId) {
+          cloudinary.uploader.destroy(publicId, (error, result) => {
+            if (error) console.error('Error deleting image from Cloudinary:', error);
+            else console.log('Deleted image from Cloudinary on game deletion:', result);
+          });
+        }
+      } else if (game.wallpaper.startsWith('/uploads/') || game.wallpaper.startsWith('uploads/')) {
+        const relativePath = game.wallpaper.startsWith('/') ? game.wallpaper.slice(1) : game.wallpaper;
+        const filePath = path.join(__dirname, '..', relativePath);
+        fs.unlink(filePath, (err) => {
+          if (err && err.code !== 'ENOENT') console.error('Error deleting local upload file:', err);
+        });
+      }
+    }
+
+    await Game.findByIdAndDelete(gameId);
+
+    res.json({ message: 'Game deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting game:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
+

@@ -21,14 +21,15 @@
                                 </button>
                             </div>
                             </TransitionChild>
-                            <div class="flex h-full flex-col overflow-y-scroll bg-white py-6 shadow-xl">
-                                <div class="px-4 sm:px-6">
-                                    <DialogTitle class="text-base font-semibold leading-6 text-gray-900">{{ props.panelTitle }}</DialogTitle>
+                            <div class="flex h-full flex-col overflow-y-scroll bg-slate-900 border-l border-slate-800 py-6 shadow-2xl text-slate-100">
+                                <div class="px-4 sm:px-6 flex items-center justify-between border-b border-slate-800 pb-4">
+                                    <DialogTitle class="text-xl font-bold leading-6 text-slate-100">{{ props.panelTitle }}</DialogTitle>
                                 </div>
                                 <div class="relative mt-6 flex-1 px-4 sm:px-6">
                                     <slot></slot>
                                 </div>
                             </div>
+
                         </DialogPanel>
                         </TransitionChild>
                     </div>

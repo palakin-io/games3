@@ -1,34 +1,31 @@
 <template>
     <div>
-        <label :for="name" class="block text-gray-700 font-medium mb-2">{{ label }}:</label>
+        <label v-if="label" :for="name" class="block text-slate-300 font-medium mb-1.5 text-sm">{{ label }}:</label>
         <input :type="type" 
                 :name="name" 
+                :id="name"
                 :placeholder="placeholder" 
                 :required="required" 
                 :min="min" 
                 :max="max" 
                 :value="modelValue"
                 @input="$emit('update:modelValue', $event.target.value)"
-                class="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        <!-- <p v-if="error" class="mt-2 text-sm text-red-600">{{ error }}</p> -->
+                class="bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 w-full text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors">
     </div>
 </template>
 
 <script setup>
-import { ref, defineProps } from 'vue';
+import { defineProps } from 'vue';
 
 defineProps({
     name: String,
     type: String,
     label: String,
     placeholder: String,
-    required: String,
+    required: [Boolean, String],
     min: String,
     max: String,
-    modelValue: String,
+    modelValue: [String, Number],
 });
-
-// const value = ref(modelValue);
-
-
-</script>
+defineEmits(['update:modelValue']);
+</script>

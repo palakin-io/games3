@@ -41,6 +41,11 @@ const gameSchema = new mongoose.Schema({
   }
 });
 
+gameSchema.index({ creator: 1 });
+gameSchema.index({ 'ratings.main': -1 });
+gameSchema.index({ title: 'text' });
+
 const Game = mongoose.model('Game', gameSchema, 'games');
 
-module.exports = Game; 
+module.exports = Game;
+ 

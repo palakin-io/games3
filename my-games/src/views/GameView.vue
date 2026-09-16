@@ -127,39 +127,40 @@
         </section>
 
         <!-- Soundtracks Section -->
-        <section v-if="gameData.soundtracks && gameData.soundtracks.length > 0" class="space-y-8">
+        <section v-if="gameData.soundtracks && gameData.soundtracks.length > 0" class="space-y-8 max-w-6xl mx-auto">
           <div class="text-center">
-            <h2 class="text-3xl sm:text-4xl font-extrabold uppercase tracking-tight bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 bg-clip-text text-transparent inline-block">
+            <h2 class="text-3xl sm:text-5xl font-extrabold uppercase tracking-tight bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 bg-clip-text text-transparent inline-block">
               Soundtracks
             </h2>
-            <p class="text-slate-400 text-xs sm:text-sm mt-2">Featured music tracks and original themes.</p>
+            <p class="text-slate-400 text-sm sm:text-base mt-2">Featured music tracks and original themes.</p>
           </div>
 
-          <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl max-w-3xl mx-auto">
-            <ul class="flex flex-col gap-3">
+          <!-- Doubled Size Soundtrack Container Box -->
+          <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl w-full">
+            <ul class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <li v-for="osts in gameData.soundtracks" :key="osts._id || osts.title">
                 <button
                   type="button"
                   @click.prevent="openModal(osts.video_url)"
-                  class="w-full p-4 min-h-[44px] rounded-xl bg-slate-950 border border-slate-800 hover:border-orange-500/60 hover:bg-slate-800/80 text-slate-200 hover:text-orange-400 font-semibold text-sm sm:text-base flex items-center justify-between transition-all cursor-pointer group"
+                  class="w-full p-6 min-h-[80px] rounded-2xl bg-slate-950 border border-slate-800 hover:border-orange-500/80 hover:bg-slate-800/90 text-slate-100 hover:text-orange-400 font-bold text-base sm:text-xl flex items-center justify-between transition-all cursor-pointer group shadow-lg"
                 >
-                  <span class="flex items-center gap-3">
-                    <span class="text-orange-400">♪</span>
-                    <span>{{ osts.title }}</span>
+                  <span class="flex items-center gap-4 truncate">
+                    <span class="text-2xl text-orange-400">♪</span>
+                    <span class="truncate">{{ osts.title }}</span>
                   </span>
-                  <span class="text-xs text-orange-400 font-bold group-hover:translate-x-1 transition-transform">Play &rarr;</span>
+                  <span class="text-xs sm:text-sm text-orange-400 font-extrabold px-3 py-1.5 rounded-lg bg-orange-500/10 group-hover:bg-orange-500/20 group-hover:translate-x-1 transition-all shrink-0">Play Track &rarr;</span>
                 </button>
               </li>
             </ul>
           </div>
 
-          <!-- Soundtrack YouTube Modal -->
-          <modal v-if="showModal" @close="handleClose">
-            <div class="w-full max-w-4xl p-2 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl">
-              <div class="relative aspect-video w-full rounded-xl overflow-hidden">
+          <!-- Soundtrack Player Modal (Doubled Size) -->
+          <modal v-if="showModal" maxWidth="6xl" @close="handleClose">
+            <div class="w-full p-1">
+              <div v-if="activeMedia.type === 'youtube'" class="relative aspect-video w-full rounded-2xl overflow-hidden shadow-2xl">
                 <iframe
                   class="w-full h-full"
-                  :src="modalUrl"
+                  :src="activeMedia.embedUrl"
                   title="YouTube video player"
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -167,9 +168,21 @@
                   allowfullscreen
                 ></iframe>
               </div>
+              <div v-else-if="activeMedia.type === 'video'" class="w-full rounded-2xl overflow-hidden shadow-2xl">
+                <video controls autoplay class="w-full rounded-2xl max-h-[80vh]" :src="activeMedia.embedUrl"></video>
+              </div>
+              <div v-else-if="activeMedia.type === 'audio'" class="w-full p-8 text-center bg-slate-950 rounded-2xl border border-slate-800">
+                <audio controls autoplay class="w-full" :src="activeMedia.embedUrl"></audio>
+              </div>
+              <div v-else class="p-8 text-center bg-slate-950 rounded-2xl border border-slate-800">
+                <p class="text-slate-300 text-base mb-3">External media link:</p>
+                <a :href="activeMedia.embedUrl" target="_blank" rel="noopener" class="text-orange-400 hover:underline font-bold text-lg">{{ activeMedia.embedUrl }}</a>
+              </div>
             </div>
           </modal>
+
         </section>
+
 
         <!-- Extra Info Section -->
         <section class="space-y-8">
@@ -259,6 +272,7 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import { buildApiUrl } from '@/config/api';
+import { parseMediaUrl } from '@/utils/media';
 
 import Cards from '@/components/CardView.vue';
 import Modal from '@/components/Modal.vue';
@@ -279,7 +293,7 @@ async function fetchGameData() {
     const response = await axios.get(buildApiUrl(`/api/games/${gameId}`));
     gameData.value = response.data;
     if (gameData.value.trailer_url) {
-      trailerURL.value = embedVideoUrl(gameData.value.trailer_url);
+      trailerURL.value = parseMediaUrl(gameData.value.trailer_url).embedUrl;
     }
 
     const wallpaperPath = gameData.value.wallpaper;
@@ -305,20 +319,12 @@ watch(() => route.params.gameID, (newId) => {
   }
 });
 
-const embedVideoUrl = (url) => {
-  if (!url) return '';
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-  if (match && match[1]) {
-    return `https://www.youtube.com/embed/${match[1]}`;
-  }
-  return '';
-};
-
 const showModal = ref(false);
-const modalUrl = ref('');
+const activeMedia = ref({ type: 'unknown', embedUrl: '' });
+
 const openModal = (videoUrl) => {
   showModal.value = true;
-  modalUrl.value = embedVideoUrl(videoUrl);
+  activeMedia.value = parseMediaUrl(videoUrl);
 };
 const handleClose = () => {
   showModal.value = false;
