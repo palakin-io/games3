@@ -1,210 +1,234 @@
 <template>
-    <side-slide :is-open="isOpen" :panel-title="panelTitle" @close="isOpen = false">
-        <div v-if="panelTitle === 'Characters'">
-            <div class="container">
-                <div class="mb-4">
-                    <form-input v-model="newCharacter.name" label="Name" type="text" name="name" required="true" :value="newCharacter.name"></form-input>
-                    <form-input v-model="newCharacter.picture_url" label="Img URL" type="text" name="URL" required="true" :value="newCharacter.picture_url"></form-input>
-                    <button @click="addCharacter()" class="mt-2 bg-indigo-500 text-white font-medium py-2 px-4 rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-700">
-                        {{ isEditing ? 'Save Changes' : 'Add' }}
-                    </button>
-                </div>
-            </div>
-            <div v-if="game.characters.length > 0" class="container mx-auto px-4 border-dashed border-2 border-sky-500 min-h-10 rounded-md flex flex-row flex-wrap justify-around">
-                <div v-for="g in game.characters" class="w-2/5 rounded overflow-hidden shadow-lg bg-gray-100 my-2 basis-1/3">
-                    <img class="w-full aspect-w-4 aspect-h-3" :src="g.picture_url" alt="Image Description">
-                    <div class="px-3 py-1 flex justify-between">
-                        <button @click="eraseChar(g.name)" class="text-red-600 inline-flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                                <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
-                            </svg>
-                        </button> 
-                        <button @click="editChar(g)" class="text-indigo-400 inline-flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                                <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
-                                <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
-                            </svg>
+    <div class="min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
+        
+        <!-- Side Slide for Characters and Soundtracks -->
+        <side-slide :is-open="isOpen" :panel-title="panelTitle" @close="isOpen = false">
+            <div v-if="panelTitle === 'Characters'">
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 mb-6">
+                    <h4 class="text-sm font-bold text-slate-200 mb-3">{{ isEditingChar ? 'Edit Character' : 'Add New Character' }}</h4>
+                    <div class="space-y-3">
+                        <form-input v-model="newCharacter.name" label="Character Name" type="text" name="char_name" placeholder="e.g. Cloud Strife"></form-input>
+                        <form-input v-model="newCharacter.picture_url" label="Image URL" type="text" name="char_url" placeholder="https://..."></form-input>
+                        <button type="button" @click="addCharacter()" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-md">
+                            {{ isEditingChar ? 'Save Changes' : '+ Add Character' }}
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div v-else>
-            <div class="container">
-                <div class="mb-4">
-                    <form-input v-model="newSoundtrack.title" label="Title" type="text" name="title" required="true" :value="newSoundtrack.title"></form-input>
-                    <form-input v-model="newSoundtrack.video_url" label="Video URL" type="text" name="URL" required="true" :value="newSoundtrack.video_url"></form-input>
-                    <button @click="addSoundtrack()" class="mt-2 bg-indigo-500 text-white font-medium py-2 px-4 rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-700">
-                        Add
-                    </button>
+
+                <div v-if="game.characters.length > 0" class="space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Added Characters ({{ game.characters.length }})</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div v-for="c in game.characters" :key="c.name" class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-md flex flex-col justify-between">
+                            <img v-if="c.picture_url" :src="c.picture_url" class="w-full h-32 object-cover" alt="Character">
+                            <div class="p-2.5">
+                                <span class="text-xs font-bold text-slate-100 block truncate">{{ c.name }}</span>
+                                <div class="flex justify-between mt-2 pt-2 border-t border-slate-700/60">
+                                    <button type="button" @click="editChar(c)" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Edit</button>
+                                    <button type="button" @click="eraseChar(c.name)" class="text-xs text-red-400 hover:text-red-300 font-medium">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div v-if="game.soundtracks.length > 0" class="container mx-auto px-4 border-dashed border-2 border-sky-500 min-h-10 rounded-md flex flex-row flex-wrap justify-around">
-                <div v-for="ost in game.soundtracks" class="w-2/5 rounded overflow-hidden shadow-lg bg-gray-100 my-2 basis-1/3">
-                    <div class="aspect-w-4 aspect-h-4"> 
-                        <iframe width="100%" height="100%" :src="ost.video_url" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                    </div>
-                    <div class="px-3 py-1 flex justify-between">
-                        <button @click="eraseOst(ost.title)" class="text-red-600 inline-flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                                <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
-                            </svg>
-                        </button> 
-                        <button @click="editOst(ost)" class="text-indigo-400 inline-flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                                <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
-                                <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
-                            </svg>
+
+            <div v-else-if="panelTitle === 'Soundtracks'">
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 mb-6">
+                    <h4 class="text-sm font-bold text-slate-200 mb-3">{{ isEditingOst ? 'Edit Soundtrack' : 'Add New Soundtrack' }}</h4>
+                    <div class="space-y-3">
+                        <form-input v-model="newSoundtrack.title" label="Track Title" type="text" name="ost_title" placeholder="e.g. One-Winged Angel"></form-input>
+                        <form-input v-model="newSoundtrack.video_url" label="YouTube or Audio/Video URL" type="text" name="ost_url" placeholder="https://www.youtube.com/watch?v=..."></form-input>
+                        <button type="button" @click="addSoundtrack()" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-md">
+                            {{ isEditingOst ? 'Save Changes' : '+ Add Soundtrack' }}
                         </button>
                     </div>
                 </div>
+
+                <div v-if="game.soundtracks.length > 0" class="space-y-4">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Added Soundtracks ({{ game.soundtracks.length }})</h4>
+                    <div v-for="ost in game.soundtracks" :key="ost.title" class="bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-semibold text-amber-400 truncate">♪ {{ ost.title }}</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="editOst(ost)" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Edit</button>
+                                <button type="button" @click="eraseOst(ost.title)" class="text-xs text-red-400 hover:text-red-300 font-medium">Remove</button>
+                            </div>
+                        </div>
+
+                        <!-- Live Soundtrack Player Preview -->
+                        <div v-if="getParsedMedia(ost.video_url).type === 'youtube'" class="aspect-video w-full rounded-lg overflow-hidden border border-slate-700">
+                            <iframe class="w-full h-full" :src="getParsedMedia(ost.video_url).embedUrl" title="Soundtrack player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <div v-else-if="getParsedMedia(ost.video_url).type === 'video'" class="w-full">
+                            <video controls class="w-full rounded-lg max-h-40 border border-slate-700" :src="getParsedMedia(ost.video_url).embedUrl"></video>
+                        </div>
+                        <div v-else-if="getParsedMedia(ost.video_url).type === 'audio'" class="w-full">
+                            <audio controls class="w-full mt-1" :src="getParsedMedia(ost.video_url).embedUrl"></audio>
+                        </div>
+                        <div v-else class="text-xs text-slate-400 truncate">
+                            <a :href="ost.video_url" target="_blank" rel="noopener" class="text-indigo-400 hover:underline">{{ ost.video_url }}</a>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </side-slide>
-    <form @submit.prevent="submitForm" class="container mx-auto mt-8 mb-8 p-6 bg-gray-100 rounded-lg shadow-md">
-        <div class="mb-4">
-            <!-- <form-input v-model="game.title" label="Game Title" type="text" name="title" required="true" :value="game.title"></form-input> -->
-             <SearchInput v-model="game.title" label="Game Title" type="text" name="title" required="true" :value="game.title"></SearchInput>
-        </div>
+        </side-slide>
 
-        <div class="mb-4">
-            <label for="description" class="block text-gray-700 font-medium mb-2">Description:</label>
-            <textarea
-                v-model="game.description" 
-                id="description" 
-                required="true"
-                class="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows="4" 
-            ></textarea>
-        </div>
-
-        <div class="mb-4">
-            <drag-and-drop label="Cover Image" @update:modelValue="updateImage"></drag-and-drop>
-        </div>
-
-        <div class="mb-4">
-            <select-input name="genre" v-model="game.genre" :items="genres" required="required" label="Genre" :value="game.genre"></select-input>
-        </div>
-
-        <!-- Subgenres Section -->
-        <div class="mb-4">
-            <label class="block text-gray-700 font-medium mb-2">Subgenres:</label>
-            <div class="flex flex-wrap gap-2">
-                <span v-for="sub in subgenresList" :key="sub" @click="toggleSubgenre(sub)"
-                    :class="['cursor-pointer px-3 py-1 rounded-full border', game.subgenres.includes(sub) ? 'bg-indigo-500 text-white border-indigo-700' : 'bg-gray-200 text-gray-700 border-gray-400', 'transition-colors duration-200']">
-                    {{ sub }}
-                </span>
+        <!-- Main Form Card -->
+        <div class="max-w-5xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8">
+            <div class="border-b border-slate-800 pb-6 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-white tracking-tight uppercase">Upload New Game</h1>
+                    <p class="text-slate-400 text-sm mt-1">Add a new game entry to your personal showcase collection.</p>
+                </div>
+                <router-link to="/games-list" class="self-start sm:self-auto text-xs font-semibold text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 transition-colors">
+                    ← Back to Games List
+                </router-link>
             </div>
-        </div>
 
+            <form @submit.prevent="submitForm" class="space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Left Column -->
+                    <div class="space-y-6">
+                        <!-- Title -->
+                        <SearchInput v-model="game.title" label="Game Title" type="text" name="title" required="true"></SearchInput>
 
-        <div class="mb-4">
-            <label for="description" class="block text-gray-700 font-medium mb-2">Scores:</label>
-            <p v-if="game.ratings.main != 1 && game.ratings.main" class="block text-gray-700 font-medium mb-2">main: </p>
-            <div class="columns-4">
-                <SelectInput name="story" v-model="game.ratings.story" :items="scores" required="required" label="Story" :value="game.ratings.story"></SelectInput>
-                <SelectInput name="ost" v-model="game.ratings.ost" :items="scores" required="required" label="Ost" :value="game.ratings.ost"></SelectInput>
-                <SelectInput name="art" v-model="game.ratings.art" :items="scores" required="required" label="Art" :value="game.ratings.art"></SelectInput>
-                <SelectInput name="gameplay" v-model="game.ratings.gameplay" :items="scores" required="required" label="Gameplay" :value="game.ratings.gameplay"></SelectInput>
-            </div>
-        </div>
+                        <!-- Description -->
+                        <div>
+                            <label for="description" class="block text-slate-300 font-medium mb-1.5 text-sm">Description:</label>
+                            <textarea
+                                v-model="game.description" 
+                                id="description" 
+                                required
+                                rows="5" 
+                                placeholder="Enter game synopsis or overall impressions..."
+                                class="bg-slate-800 border border-slate-700 rounded-lg p-3.5 w-full text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                            ></textarea>
+                        </div>
 
-        <div class="mb-4 columns-2">
-            <div> 
-                <label class="block text-gray-700 font-medium mb-2">Start Date</label>
-                <flat-pickr
-                    v-model="game.dateStart"
-                    :config="config"
-                    class="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="Select date"
-                    name="date"
-                />
-            </div>
-            <div> 
-                <label class="block text-gray-700 font-medium mb-2">End Date</label>
-                <flat-pickr
-                    v-model="game.dateEnd"
-                    :config="config"
-                    class="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="Select date"
-                    name="date"
-                />
-            </div>
-        </div>
+                        <!-- Main Genre -->
+                        <SelectInput name="genre" v-model="game.genre" :items="genres" required="true" label="Main Genre"></SelectInput>
 
-        <div class="mb-4 columns-2">
-            <div>
-                <button @click="openSideSlide('Characters')" type="button" class="bg-indigo-700 text-white font-medium py-2 px-4 rounded-md hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-900 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    Add Characters
-                </button>
-            </div>
-            <div>
-                <button @click="openSideSlide('Soundtracks')" type="button" class="bg-indigo-700 text-white font-medium py-2 px-4 rounded-md hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-900 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    Add Soundtracks
-                </button>
-            </div>
-        </div>
+                        <!-- Subgenres Badges -->
+                        <div>
+                            <label class="block text-slate-300 font-medium mb-2 text-sm">Subgenres:</label>
+                            <div class="flex flex-wrap gap-2 max-h-44 overflow-y-auto p-2 bg-slate-950/40 border border-slate-800 rounded-xl">
+                                <span v-for="sub in subgenresList" :key="sub" @click="toggleSubgenre(sub)"
+                                    :class="[
+                                        'cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all duration-200 select-none',
+                                        game.subgenres.includes(sub) 
+                                            ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-500/20' 
+                                            : 'bg-slate-800/80 text-slate-400 border-slate-700/80 hover:bg-slate-700/60 hover:text-slate-200'
+                                    ]">
+                                    {{ sub }}
+                                </span>
+                            </div>
+                        </div>
 
-        <div class="mb-4 columns-2">
-            <form-input v-model="game.trailer_url" label="Game Trailer" type="text" name="trailer" required="true" :value="game.trailer_url"></form-input>
-            <form-input v-model="game.wiki_url" label="Game Wiki" type="text" name="wiki" required="true" :value="game.wiki_url"></form-input>
-        </div>
+                        <!-- Ratings Breakdown -->
+                        <div class="bg-slate-950/40 border border-slate-800 p-4 rounded-xl space-y-3">
+                            <label class="block text-slate-200 font-bold text-sm">Category Scores (1 - 10):</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <SelectInput name="story" v-model="game.ratings.story" :items="scores" required="true" label="Story"></SelectInput>
+                                <SelectInput name="ost" v-model="game.ratings.ost" :items="scores" required="true" label="OST"></SelectInput>
+                                <SelectInput name="art" v-model="game.ratings.art" :items="scores" required="true" label="Art"></SelectInput>
+                                <SelectInput name="gameplay" v-model="game.ratings.gameplay" :items="scores" required="true" label="Gameplay"></SelectInput>
+                            </div>
+                        </div>
+                    </div>
 
-        <button type="submit" class="bg-indigo-500 text-white font-medium py-2 px-4 rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-700">
-            Upload
-        </button>
-        <div v-if="isLoading">
-            <div aria-label="Loading..." role="status" class="flex items-center space-x-2">
-                <svg class="h-20 w-20 animate-spin stroke-gray-500" viewBox="0 0 256 256">
-                    <line x1="128" y1="32" x2="128" y2="64" stroke-linecap="round" stroke-linejoin="round" stroke-width="24"></line>
-                    <line x1="195.9" y1="60.1" x2="173.3" y2="82.7" stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="24"></line>
-                    <line x1="224" y1="128" x2="192" y2="128" stroke-linecap="round" stroke-linejoin="round" stroke-width="24">
-                    </line>
-                    <line x1="195.9" y1="195.9" x2="173.3" y2="173.3" stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="24"></line>
-                    <line x1="128" y1="224" x2="128" y2="192" stroke-linecap="round" stroke-linejoin="round" stroke-width="24">
-                    </line>
-                    <line x1="60.1" y1="195.9" x2="82.7" y2="173.3" stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="24"></line>
-                    <line x1="32" y1="128" x2="64" y2="128" stroke-linecap="round" stroke-linejoin="round" stroke-width="24"></line>
-                    <line x1="60.1" y1="60.1" x2="82.7" y2="82.7" stroke-linecap="round" stroke-linejoin="round" stroke-width="24">
-                    </line>
-                </svg>
-                <span class="text-4xl font-medium text-gray-500">Updating...</span>
-            </div>
+                    <!-- Right Column -->
+                    <div class="space-y-6">
+                        <!-- Cover Image Dropzone with Instant Preview -->
+                        <div>
+                            <label class="block text-slate-300 font-medium mb-1.5 text-sm">Cover Image / Wallpaper:</label>
+                            <drag-and-drop label="Cover Image" v-model="coverImg"></drag-and-drop>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div> 
+                                <label class="block text-slate-300 font-medium mb-1.5 text-sm">Start Date</label>
+                                <flat-pickr
+                                    v-model="game.dateStart"
+                                    :config="config"
+                                    class="bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 w-full text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors"
+                                    placeholder="Select date"
+                                    name="dateStart"
+                                />
+                            </div>
+                            <div> 
+                                <label class="block text-slate-300 font-medium mb-1.5 text-sm">End Date</label>
+                                <flat-pickr
+                                    v-model="game.dateEnd"
+                                    :config="config"
+                                    class="bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 w-full text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors"
+                                    placeholder="Select date"
+                                    name="dateEnd"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Media Actions (Add Characters / Add Soundtracks) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button @click="openSideSlide('Characters')" type="button" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-400 font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md">
+                                <span>👥</span> Manage Characters ({{ game.characters.length }})
+                            </button>
+                            <button @click="openSideSlide('Soundtracks')" type="button" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md">
+                                <span>♪</span> Manage Soundtracks ({{ game.soundtracks.length }})
+                            </button>
+                        </div>
+
+                        <!-- Trailer & Wiki URLs -->
+                        <div class="space-y-4">
+                            <form-input v-model="game.trailer_url" label="Game Trailer URL" type="text" name="trailer" placeholder="https://www.youtube.com/..."></form-input>
+                            <form-input v-model="game.wiki_url" label="Game Wiki URL" type="text" name="wiki" placeholder="https://wikipedia.org/..."></form-input>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button & Loading State -->
+                <div class="pt-6 border-t border-slate-800 flex flex-col items-center">
+                    <button 
+                        type="submit" 
+                        :disabled="isLoading"
+                        class="w-full max-w-md py-3.5 px-6 rounded-xl font-bold text-slate-950 bg-gradient-to-r from-indigo-500 to-indigo-400 hover:from-indigo-400 hover:to-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-3 text-base"
+                    >
+                        <svg v-if="isLoading" class="animate-spin h-5 w-5 text-slate-950" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>{{ isLoading ? 'Uploading Game...' : '🚀 Upload Game' }}</span>
+                    </button>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
 </template>
 
 <script setup>
-import { reactive, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 import 'flatpickr/dist/themes/dark.css';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { buildApiUrl } from '@/config/api';
-
+import { parseMediaUrl } from '@/utils/media';
 
 import FormInput from '@/components/misc/FormInput.vue';
 import DragAndDrop from '@/components/misc/DragAndDrop.vue';
 import SelectInput from '@/components/misc/SelectInput.vue';
-import SideSlide from '@/components/SideSlide.vue'
+import SideSlide from '@/components/SideSlide.vue';
 import SearchInput from '@/components/misc/SearchInput.vue';
 
+const router = useRouter();
 
-const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike"]
+const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike", "Visual Novel"];
 const subgenresList = [
     "Open World", "Turn-Based", "Tactical", "Platformer", "Metroidvania", "Puzzle", "Stealth", "Sandbox", "Survival", "Horror", "Shooter", "Fighting", "Simulation", "Strategy", "Card Game", "Party", "Sports", "Rhythm", "Adventure", "Narrative", "Indie", "MMO", "Co-op", "Singleplayer", "Multiplayer"
-]
-const scores = [1, 2, 3, 4, 5,6,7,8,9,10]
+];
+const scores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const game = ref({
     title: '',
@@ -226,7 +250,7 @@ const game = ref({
     trailer_url: '',
     wiki_url: ''
 });
-// Subgenre badge toggle logic
+
 function toggleSubgenre(sub) {
     const idx = game.value.subgenres.indexOf(sub);
     if (idx === -1) {
@@ -237,143 +261,135 @@ function toggleSubgenre(sub) {
 }
 
 const config = ref({
-    wrap: false, // set wrap to true only when using 'input-group'
+    wrap: false,
     altFormat: 'M j, Y',
     altInput: true,
-    dateFormat: 'Y-m-d', // Output format for backend        
+    dateFormat: 'Y-m-d',
 });
 
 const isOpen = ref(false);
-const panelTitle = ref();
-function openSideSlide(slideName){
-    console.log(slideName);
+const panelTitle = ref('');
+function openSideSlide(slideName) {
     panelTitle.value = slideName;
     isOpen.value = true;
 }
 
-const newCharacter = ref({
-    name: '',
-    picture_url: ''
-})
-const isEditing = ref(false);
-const characterBeingEdited = ref(null);
+// Characters handling
+const newCharacter = ref({ name: '', picture_url: '' });
+const isEditingChar = ref(false);
+const charBeingEdited = ref(null);
+
 function addCharacter() {
-    if (isEditing.value) {
-        const index = game.value.characters.findIndex(c => c === characterBeingEdited.value);
+    if (!newCharacter.value.name) return;
+    if (isEditingChar.value && charBeingEdited.value) {
+        const index = game.value.characters.findIndex(c => c === charBeingEdited.value);
         if (index !== -1) {
             game.value.characters[index] = { ...newCharacter.value };
-            isEditing.value = false;
-            characterBeingEdited.value = null;
         }
+        isEditingChar.value = false;
+        charBeingEdited.value = null;
     } else {
         game.value.characters.push({ ...newCharacter.value });
     }
-    newCharacter.value.name = '';
-    newCharacter.value.picture_url = '';
+    newCharacter.value = { name: '', picture_url: '' };
 }
+
 function eraseChar(name) {
     game.value.characters = game.value.characters.filter(char => char.name !== name);
 }
+
 function editChar(character) {
-  newCharacter.value.name = character.name;
-  newCharacter.value.picture_url = character.picture_url;
-  isEditing.value = true;
-  characterBeingEdited.value = character;
+    newCharacter.value = { ...character };
+    isEditingChar.value = true;
+    charBeingEdited.value = character;
 }
 
+// Soundtracks handling
+const newSoundtrack = ref({ title: '', video_url: '' });
+const isEditingOst = ref(false);
 const ostBeingEdited = ref(null);
-function eraseOst(title) {
-    game.value.soundtracks = game.value.soundtracks.filter(ost => ost.title !== title);
-}
-function editOst(ost) {
-    newSoundtrack.value.title = ost.title;
-    newSoundtrack.value.video_url = ost.video_url;
-    isEditing.value = true;
-    ostBeingEdited.value = ost;
-}
-const newSoundtrack = ref({
-    title: '',
-    video_url: ''
-})
+
 function addSoundtrack() {
-    if (isEditing.value) {
+    if (!newSoundtrack.value.title || !newSoundtrack.value.video_url) return;
+    if (isEditingOst.value && ostBeingEdited.value) {
         const index = game.value.soundtracks.findIndex(s => s === ostBeingEdited.value);
         if (index !== -1) {
             game.value.soundtracks[index] = { ...newSoundtrack.value };
-            isEditing.value = false;
-            ostBeingEdited.value = null;
         }
+        isEditingOst.value = false;
+        ostBeingEdited.value = null;
     } else {
         game.value.soundtracks.push({ ...newSoundtrack.value });
     }
-    newSoundtrack.value.title = '';
-    newSoundtrack.value.video_url = '';
+    newSoundtrack.value = { title: '', video_url: '' };
 }
 
-const coverImg = ref(null)
-function updateImage(fileData) {
-    coverImg.value = fileData;
-    console.log(coverImg.value);
+function eraseOst(title) {
+    game.value.soundtracks = game.value.soundtracks.filter(ost => ost.title !== title);
 }
 
-// Watch for changes in the coverImg
+function editOst(ost) {
+    newSoundtrack.value = { ...ost };
+    isEditingOst.value = true;
+    ostBeingEdited.value = ost;
+}
+
+function getParsedMedia(url) {
+    return parseMediaUrl(url);
+}
+
+const coverImg = ref(null);
 watch(coverImg, (newFile) => {
-  game.value.wallpaper = newFile;
+    game.value.wallpaper = newFile;
 });
 
 const isLoading = ref(false);
-const router = useRouter();
+
 const submitForm = async () => {
     try {
         isLoading.value = true;
         const formData = new FormData();
 
-        // 1. Calculate Average Rating (Allowing Decimals)
-        const validRatings = Object.values(game.value.ratings).filter(rating => !isNaN(parseFloat(rating))); // Parse as floats
+        // 1. Calculate Average Rating
+        const validRatings = Object.values(game.value.ratings).filter(rating => rating !== null && !isNaN(parseFloat(rating)));
         const totalRating = validRatings.reduce((sum, rating) => sum + parseFloat(rating), 0);
-        const averageRating = validRatings.length > 0 ? (totalRating / validRatings.length).toFixed(1) : 0; // Calculate average with 1 decimal place
+        const averageRating = validRatings.length > 0 ? (totalRating / validRatings.length).toFixed(1) : 0;
+        game.value.ratings.main = parseFloat(averageRating);
 
-        // Assign the average to the 'main' rating
-        game.value.ratings.main = parseFloat(averageRating); // Store as float
-
-        // 2. Append Form Fields (Including Correctly Formatted characters, soundtracks, and subgenres)
+        // 2. Append Form Fields
         for (const key in game.value) {
             if (key !== 'wallpaper') {  
                 if (Array.isArray(game.value[key]) && key !== 'subgenres') {
                     if (key === 'characters' || key === 'soundtracks') {
-                        // Correctly format characters and soundtracks as arrays of objects
                         formData.append(key, JSON.stringify(game.value[key]));
                     } else {
-                        // Other arrays (if any)
                         game.value[key].forEach((item, index) => {
                             formData.append(`${key}[${index}]`, JSON.stringify(item));
                         });
                     }
                 } else if (key === 'subgenres') {
-                    // Send subgenres as an array
                     game.value.subgenres.forEach((sub, idx) => {
                         formData.append(`subgenres[${idx}]`, sub);
                     });
                 } else if (key === 'ratings') {
-                    // Append rating fields with dot notation
                     for (const ratingKey in game.value.ratings) {
-                        formData.append(`ratings.${ratingKey}`, game.value.ratings[ratingKey]);
+                        if (game.value.ratings[ratingKey] !== null) {
+                            formData.append(`ratings.${ratingKey}`, game.value.ratings[ratingKey]);
+                        }
                     }
-                } else {
+                } else if (game.value[key] !== null && game.value[key] !== undefined) {
                     formData.append(key, game.value[key]);
                 }
             }
         }
 
-        // 3. Append Wallpaper (if available)
-        if (coverImg.value) {
+        // 3. Append Wallpaper File
+        if (coverImg.value && coverImg.value.data) {
             const fileData = coverImg.value;
-            // Extract data and type from Proxy
             const base64Data = fileData.data;
             const fileType = fileData.type;
             const fileName = fileData.name;
 
-            // Convert Base64 to Blob
             const byteCharacters = atob(base64Data.split(',')[1]);
             const byteNumbers = new Array(byteCharacters.length);
             for (let i = 0; i < byteCharacters.length; i++) {
@@ -381,35 +397,24 @@ const submitForm = async () => {
             }
             const byteArray = new Uint8Array(byteNumbers);
             const blob = new Blob([byteArray], { type: fileType });
-
-            // Create File object from Blob
             const file = new File([blob], fileName, { type: fileType });
 
-            // Append File object to FormData
             formData.append("wallpaper", file, fileName);
         }
 
-        
-        console.log('FormData:', formData);  // Log the FormData object before sending
-
-
         const response = await axios.post(buildApiUrl('/api/games/upload'), formData, { 
             headers: {
-                'Content-Type': 'multipart/form-data' // Important for file uploads
+                'Content-Type': 'multipart/form-data'
             }
         });
 
         console.log('Game uploaded successfully:', response.data);
         isLoading.value = false;
-        router.push('/games-list')
-        // Clear the form, redirect, or show a success message
+        router.push('/games-list');
     } catch (error) {
         console.error('Error uploading game:', error.response ? error.response.data : error.message);
-        // Handle the error appropriately
+        isLoading.value = false;
+        alert('Failed to upload game. ' + (error.response?.data?.message || 'Please check your input values.'));
     }
 };
 </script>
-
-<style>
-
-</style>
