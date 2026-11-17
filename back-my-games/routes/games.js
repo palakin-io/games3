@@ -157,18 +157,31 @@ router.put('/edit', authenticateJWT, upload.single('wallpaper'), async (req, res
       return res.status(400).json({ message: 'Invalid date format. Please use YYYY-MM-DD' });
     }
 
+    const mongoose = require('mongoose');
     const gameId = req.body._id;
+    if (!mongoose.Types.ObjectId.isValid(gameId)) {
+      return res.status(400).json({ message: 'Invalid game ID format' });
+    }
+
     const existingGame = await Game.findById(gameId);
 
     if (!existingGame) {
       return res.status(404).json({ message: 'Game not found' });
     }
-    
+
     let characters = [];
     let soundtracks = [];
 
-    characters = req.body.characters;
-    soundtracks = req.body.soundtracks;
+    try {
+      characters = typeof req.body.characters === 'string'
+        ? JSON.parse(req.body.characters || '[]')
+        : (Array.isArray(req.body.characters) ? req.body.characters : []);
+      soundtracks = typeof req.body.soundtracks === 'string'
+        ? JSON.parse(req.body.soundtracks || '[]')
+        : (Array.isArray(req.body.soundtracks) ? req.body.soundtracks : []);
+    } catch (error) {
+      return res.status(400).json({ message: 'Invalid JSON format for characters or soundtracks' });
+    }
 
     // Parse subgenres as array
     let subgenres = [];
@@ -183,19 +196,26 @@ router.put('/edit', authenticateJWT, upload.single('wallpaper'), async (req, res
     } else {
       subgenres = Object.keys(req.body)
         .filter(key => key.startsWith('subgenres['))
-        .sort()
+        .sort((a, b) => {
+          const idxA = parseInt(a.slice(10, -1), 10);
+          const idxB = parseInt(b.slice(10, -1), 10);
+          return idxA - idxB;
+        })
         .map(key => req.body[key]);
     }
 
+    const existingRatings = existingGame.ratings && typeof existingGame.ratings.toObject === 'function'
+      ? existingGame.ratings.toObject()
+      : (existingGame.ratings || {});
+
     const gameData = {
-      _id: req.body._id,
       title: req.body.title,
       wallpaper: req.file ? req.file.path : existingGame.wallpaper,
       description: req.body.description,
       genre: req.body.genre,
       subgenres: subgenres,
       characters: characters,
-      ratings: existingGame.ratings || {},
+      ratings: { ...existingRatings },
       dateStart: dateStart,
       dateEnd: dateEnd,
       soundtracks: soundtracks,
@@ -206,7 +226,7 @@ router.put('/edit', authenticateJWT, upload.single('wallpaper'), async (req, res
     // Update individual rating values 
     for (const ratingKey of ['main', 'story', 'ost', 'art', 'gameplay']) {
       const ratingValue = req.body[`ratings.${ratingKey}`]; 
-      if (ratingValue !== undefined && !isNaN(ratingValue)) {
+      if (ratingValue !== undefined && ratingValue !== '' && !isNaN(Number(ratingValue))) {
         gameData.ratings[ratingKey] = ratingKey === 'main'
           ? parseFloat(ratingValue)
           : parseInt(ratingValue, 10);
@@ -237,8 +257,11 @@ router.put('/edit', authenticateJWT, upload.single('wallpaper'), async (req, res
   } catch (error) {
     console.error(error);
 
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: 'Validation error', errors: error.errors });
+    if (error.name === 'ValidationError' || error.name === 'CastError') {
+      return res.status(400).json({
+        message: error.name === 'ValidationError' ? 'Validation error' : 'Invalid field format',
+        errors: error.errors || error.message
+      });
     }
 
     res.status(500).json({ message: 'Server error' });

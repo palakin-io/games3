@@ -101,6 +101,7 @@
                       <img 
                         v-if="movie.posterPath"
                         :src="`https://image.tmdb.org/t/p/w185${movie.posterPath}`" 
+                        @error="handleImageError"
                         loading="lazy"
                         decoding="async"
                         class="w-full h-full object-cover" 
@@ -160,6 +161,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import { MovieDb } from 'moviedb-promise';
 import { buildApiUrl } from '@/config/api';
+import { handleImageError } from '@/utils/image';
 
 const authStore = useAuthStore();
 const tmdbApiKey = '79283fdbaeff4888ff6da67efafe0ee4';

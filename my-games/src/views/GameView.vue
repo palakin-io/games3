@@ -9,14 +9,15 @@
         <img
           :src="wallpaperImg"
           alt="Background Image"
+          @error="handleImageError"
           loading="lazy"
           decoding="async"
-          class="absolute inset-0 w-full h-full object-fill object-center select-none"
+          class="absolute inset-0 w-full h-full object-cover object-center select-none"
         />
         
         <!-- Dark Slate Gradient Overlays -->
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/20"></div>
-        <div class="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/40 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-slate-950/15 to-transparent"></div>
 
         <!-- Hero Content Overlay -->
         <div class="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 flex flex-col gap-4">
@@ -48,7 +49,7 @@
           <div class="mt-2">
             <router-link
               v-if="authStore.isLoggedIn"
-              :to="{ name: 'edit-game', params: { id: gameId } }"
+              :to="{ name: 'edit-game', params: { gameID: gameId } }"
               class="inline-flex items-center gap-2 px-6 py-3 min-h-[44px] bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-extrabold text-sm rounded-full shadow-lg shadow-orange-500/20 hover:scale-105 active:scale-95 transition-all"
             >
               <span>✎ Edit Game</span>
@@ -273,6 +274,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import { buildApiUrl } from '@/config/api';
 import { parseMediaUrl } from '@/utils/media';
+import { formatImageUrl, handleImageError } from '@/utils/image';
 
 import Cards from '@/components/CardView.vue';
 import Modal from '@/components/Modal.vue';
@@ -296,12 +298,7 @@ async function fetchGameData() {
       trailerURL.value = parseMediaUrl(gameData.value.trailer_url).embedUrl;
     }
 
-    const wallpaperPath = gameData.value.wallpaper;
-    if (wallpaperPath && (wallpaperPath.startsWith('http') || wallpaperPath.startsWith('https'))) {
-      wallpaperImg.value = wallpaperPath;
-    } else {
-      wallpaperImg.value = `${buildApiUrl('')}${wallpaperPath}`;
-    }
+    wallpaperImg.value = formatImageUrl(gameData.value.wallpaper);
   } catch (error) {
     console.error('Error fetching game data:', error);
   }

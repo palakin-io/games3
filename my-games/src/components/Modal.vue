@@ -25,7 +25,7 @@ import { XMarkIcon } from '@heroicons/vue/24/solid';
 const props = defineProps({
   maxWidth: {
     type: String,
-    default: '6xl'
+    default: 'md'
   }
 });
 
@@ -42,12 +42,13 @@ const maxWidthClass = computed(() => {
     lg: 'max-w-lg',
     xl: 'max-w-xl',
     '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
     '4xl': 'max-w-4xl',
     '6xl': 'max-w-6xl',
     '7xl': 'max-w-7xl',
     full: 'max-w-full'
   };
-  return map[props.maxWidth] || props.maxWidth || 'max-w-6xl';
+  return map[props.maxWidth] || props.maxWidth || 'max-w-md';
 });
 </script>
 

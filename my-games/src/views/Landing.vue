@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100 overflow-x-hidden">
     <!-- Login Modal -->
-    <modal v-if="showModal" @close="handleClose">
+    <modal v-if="showModal" maxWidth="md" @close="handleClose">
       <log-in-form></log-in-form>
     </modal>
 
