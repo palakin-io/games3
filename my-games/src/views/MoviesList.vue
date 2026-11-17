@@ -89,6 +89,7 @@
                       <img 
                         v-if="movie.poster_path"
                         :src="`https://image.tmdb.org/t/p/w185${movie.poster_path}`" 
+                        @error="handleImageError"
                         loading="lazy"
                         decoding="async"
                         class="w-full h-full object-cover" 
@@ -169,6 +170,7 @@ import axios from 'axios';
 import { MovieDb } from 'moviedb-promise';
 import { useAuthStore } from '@/stores/auth';
 import { buildApiUrl } from '@/config/api';
+import { handleImageError } from '@/utils/image';
 import debounce from 'lodash/debounce';
 
 const authStore = useAuthStore();

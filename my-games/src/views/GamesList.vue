@@ -138,14 +138,15 @@
               <!-- Solid bg-slate-900 card without heavy backdrop-blur -->
               <div class="h-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-md transition-all duration-200 hover:-translate-y-1 hover:border-slate-700 hover:shadow-lg flex flex-col">
                 
-                <!-- Image Wrapper with object-fill fit -->
+                <!-- Image Wrapper with object-cover fit -->
                 <div class="relative w-full aspect-[4/3] bg-slate-800 overflow-hidden">
                   <img
                     :src="getCoverImageUrl(game)"
                     :alt="game.title + ' cover image'"
+                    @error="handleImageError"
                     loading="lazy"
                     decoding="async"
-                    class="w-full h-full object-fill transition-transform duration-300 group-hover:scale-105"
+                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <!-- Rating Badge Overlay -->
                   <div class="absolute top-3 right-3 bg-slate-950/90 text-amber-400 font-extrabold px-2.5 py-1 rounded-full text-xs border border-amber-500/30 flex items-center gap-1 shadow">
@@ -199,6 +200,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import { buildApiUrl } from '@/config/api';
+import { formatImageUrl, handleImageError } from '@/utils/image';
 
 const authStore = useAuthStore();
 
@@ -233,13 +235,15 @@ const toggleSortDirection = () => {
 };
 
 const getCoverImageUrl = (game) => {
+  let url = null;
   if (game.characters && game.characters.length > 0 && game.characters[0].picture_url) {
-    return game.characters[0].picture_url;
+    url = game.characters[0].picture_url;
+  } else if (game.picture_url) {
+    url = game.picture_url;
+  } else if (game.wallpaper) {
+    url = game.wallpaper;
   }
-  if (game.picture_url) {
-    return game.picture_url;
-  }
-  return 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop';
+  return formatImageUrl(url);
 };
 
 const getDisplayRating = (game) => {

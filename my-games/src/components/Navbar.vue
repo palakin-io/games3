@@ -1,5 +1,5 @@
 <template>
-    <modal v-if="showModal" @close="handleClose">
+    <modal v-if="showModal" maxWidth="md" @close="handleClose">
         <log-in-form></log-in-form>
     </modal>
 

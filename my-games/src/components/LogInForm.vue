@@ -1,62 +1,66 @@
 <template>
-    <div class="py-2" v-if="!registrationForm">
-        <div class="flex h-full items-center justify-center">
-            <div
-                class="rounded-lg border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-900 flex-col flex h-full items-center justify-center sm:px-4">
-                <div class="flex h-full flex-col justify-center gap-4 p-6">
-                    <div class="left-0 right-0 inline-block border-gray-200 px-2 py-2.5 sm:px-4">
-                        <form @submit.prevent="login" class="flex flex-col gap-4 pb-4">
-                            <h1 class="mb-4 text-2xl font-bold  dark:text-white">Login</h1>
-                            <div>
-                                <div class="mb-2">
-                                    <label class="text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        for="loginName">Email or Username:</label>
-                                </div>
-                                <div class="flex w-full rounded-lg pt-1">
-                                    <div class="relative w-full"><input
-                                            class="block w-full border disabled:cursor-not-allowed disabled:opacity-50 bg-gray-50 border-gray-300 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-cyan-500 dark:focus:ring-cyan-500 p-2.5 text-sm rounded-lg"
-                                            v-model="loginName" id="loginName" type="text" name="loginName"
-                                            required="">
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="mb-2">
-                                    <label class="text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        data-testid="flowbite-label" for="password">Password</label>
-                                </div>
-                                <div class="flex w-full rounded-lg pt-1">
-                                    <div class="relative w-full"><input
-                                            class="block w-full border disabled:cursor-not-allowed disabled:opacity-50 bg-gray-50 border-gray-300 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-cyan-500 dark:focus:ring-cyan-500 p-2.5 text-sm rounded-lg"
-                                            v-model="password" id="password" type="password" name="password" required="">
-                                    </div>
-                                </div>
-                                <p class="mt-2 cursor-pointer text-blue-500 hover:text-blue-600">Forgot password?</p>
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <button type="submit"
-                                    class="border transition-colors focus:ring-2 p-0.5 disabled:cursor-not-allowed border-transparent bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white disabled:bg-gray-300 disabled:text-gray-700 rounded-lg ">
-                                    <span
-                                        class="flex items-center justify-center gap-1 font-medium py-1 px-2.5 text-base false">
-                                        Login
-                                    </span>
-                                </button>
-                            </div>
-                        </form>
-                        <div class="min-w-[270px]">
-                            <div class="mt-4 text-center dark:text-gray-200">New user?
-                                <a class="text-blue-500 underline hover:text-blue-600" href="#" @click.prevent="registrationForm = true">Create account
-                                    here</a>
-                                <p>Or</p>
-                                <GoogleLogin :callback="handleGoogleLogin" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <div class="w-full max-w-md mx-auto p-2 sm:p-4 text-slate-100" v-if="!registrationForm">
+        <h2 class="text-2xl font-black text-center mb-6 uppercase tracking-tight bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 bg-clip-text text-transparent">
+            Welcome Back
+        </h2>
+
+        <form @submit.prevent="login" class="flex flex-col gap-4">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5" for="loginName">
+                    Email or Username
+                </label>
+                <input
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+                    v-model="loginName"
+                    id="loginName"
+                    type="text"
+                    name="loginName"
+                    placeholder="Enter email or username"
+                    required
+                />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5" for="password">
+                    Password
+                </label>
+                <input
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+                    v-model="password"
+                    id="password"
+                    type="password"
+                    name="password"
+                    placeholder="••••••••"
+                    required
+                />
+            </div>
+
+            <button
+                type="submit"
+                class="w-full mt-2 py-3 px-4 min-h-[44px] rounded-xl font-extrabold text-sm text-slate-950 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/20 active:scale-95 transition-all cursor-pointer"
+            >
+                Login
+            </button>
+        </form>
+
+        <div class="mt-6 pt-4 border-t border-slate-800 text-center text-xs text-slate-400 space-y-3">
+            <div>
+                New user? 
+                <a class="text-orange-400 font-bold hover:underline ml-1" href="#" @click.prevent="registrationForm = true">
+                    Create account here
+                </a>
+            </div>
+            <div class="flex items-center gap-3 my-2 text-slate-500">
+                <div class="h-px bg-slate-800 flex-1"></div>
+                <span class="text-xs uppercase font-bold tracking-wider">or</span>
+                <div class="h-px bg-slate-800 flex-1"></div>
+            </div>
+            <div class="flex justify-center pt-1 overflow-hidden">
+                <GoogleLogin :callback="handleGoogleLogin" />
             </div>
         </div>
     </div>
-    <div v-else>
+    <div v-else class="w-full max-w-md mx-auto p-2">
         <registration-form @registration-complete="handleRegistrationComplete"></registration-form>
     </div>
 </template>

@@ -1,11 +1,12 @@
 <template>
   <div class="relative w-full aspect-[3/4] rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg group hover:border-orange-500/50 hover:shadow-orange-500/10 transition-all duration-300">
     <img
-      :src="props.img"
+      :src="displayImg"
       :alt="props.title + ' image'"
+      @error="handleImageError"
       loading="lazy"
       decoding="async"
-      class="w-full h-full object-fill transition-transform duration-500 group-hover:scale-105"
+      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
     />
     <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
     
@@ -21,17 +22,18 @@
       </button>
     </div>
 
-    <modal v-if="showModal" @close="handleClose">
-      <div class="max-w-4xl max-h-[85vh] p-2 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex items-center justify-center">
-        <img :src="props.img" class="max-w-full max-h-[80vh] object-contain rounded-xl" :alt="props.title">
+    <modal v-if="showModal" maxWidth="3xl" @close="handleClose">
+      <div class="w-full p-2 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl flex items-center justify-center">
+        <img :src="displayImg" @error="handleImageError" class="max-w-full max-h-[75vh] object-contain rounded-xl mx-auto" :alt="props.title">
       </div>
     </modal>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import Modal from '@/components/Modal.vue';
+import { formatImageUrl, handleImageError } from '@/utils/image';
 
 const showModal = ref(false);
 const handleClose = () => {
@@ -41,5 +43,9 @@ const handleClose = () => {
 const props = defineProps({
   title: String,
   img: String
+});
+
+const displayImg = computed(() => {
+  return formatImageUrl(props.img);
 });
 </script>
