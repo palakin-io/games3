@@ -41,6 +41,11 @@ const router = createRouter({
       component: GamesList
     },
     {
+      path: '/games-to-play',
+      name: 'games-to-play',
+      component: () => import('../views/GamesToPlay.vue')
+    },
+    {
       path: '/movies',
       name: 'movies',
       component: () => import('../views/MoviesList.vue')

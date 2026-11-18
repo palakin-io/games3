@@ -80,9 +80,24 @@
                     <h1 class="text-3xl font-extrabold text-white tracking-tight uppercase">Upload New Game</h1>
                     <p class="text-slate-400 text-sm mt-1">Add a new game entry to your personal showcase collection.</p>
                 </div>
-                <router-link to="/games-list" class="self-start sm:self-auto text-xs font-semibold text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 transition-colors">
-                    ← Back to Games List
-                </router-link>
+                <div class="flex items-center gap-2 self-start sm:self-auto">
+                    <router-link v-if="backlogId" to="/games-to-play" class="text-xs font-semibold text-orange-400 hover:text-orange-300 px-4 py-2 rounded-lg bg-orange-500/10 border border-orange-500/30 transition-colors">
+                        ← Back to Games To Play
+                    </router-link>
+                    <router-link to="/games-list" class="text-xs font-semibold text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 transition-colors">
+                        ← Back to Games List
+                    </router-link>
+                </div>
+            </div>
+
+            <!-- Banner when promoting from Games To Play -->
+            <div v-if="backlogId" class="mb-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-between gap-3 text-xs sm:text-sm text-orange-200">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-lg">🏆</span>
+                    <span>
+                        Pre-filled from your <strong>Games To Play</strong> list. Once uploaded, this game will be automatically removed from your backlog.
+                    </span>
+                </div>
             </div>
 
             <form @submit.prevent="submitForm" class="space-y-8">
@@ -207,12 +222,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 import 'flatpickr/dist/themes/dark.css';
 import axios from 'axios';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { buildApiUrl } from '@/config/api';
 import { parseMediaUrl } from '@/utils/media';
 
@@ -223,6 +238,8 @@ import SideSlide from '@/components/SideSlide.vue';
 import SearchInput from '@/components/misc/SearchInput.vue';
 
 const router = useRouter();
+const route = useRoute();
+const backlogId = ref(route.query.backlogId || null);
 
 const genres = ["JRPG", "RPG", "Roguelite", "RTS", "MOBA", "FPS", "Action Adventure", "CRPG", "SoulsLike", "Visual Novel"];
 const subgenresList = [
@@ -249,6 +266,100 @@ const game = ref({
     soundtracks: [],
     trailer_url: '',
     wiki_url: ''
+});
+
+function autoMatchGenresAndSubgenres(steamGenres = [], steamCategories = [], descriptionText = '', titleText = '') {
+    const combinedText = `${titleText} ${descriptionText} ${steamGenres.join(' ')} ${steamCategories.join(' ')}`.toLowerCase();
+    const genreSet = new Set(steamGenres.map(g => g.toLowerCase()));
+
+    // 1. Auto-match main genre
+    if (combinedText.includes('jrpg')) {
+        game.value.genre = 'JRPG';
+    } else if (combinedText.includes('souls-like') || combinedText.includes('soulslike') || combinedText.includes('soulsborne')) {
+        game.value.genre = 'SoulsLike';
+    } else if (combinedText.includes('roguelite') || combinedText.includes('roguelike')) {
+        game.value.genre = 'Roguelite';
+    } else if (combinedText.includes('crpg')) {
+        game.value.genre = 'CRPG';
+    } else if (combinedText.includes('visual novel')) {
+        game.value.genre = 'Visual Novel';
+    } else if (combinedText.includes('moba')) {
+        game.value.genre = 'MOBA';
+    } else if (combinedText.includes('fps') || combinedText.includes('first-person shooter')) {
+        game.value.genre = 'FPS';
+    } else if (genreSet.has('rpg')) {
+        game.value.genre = 'RPG';
+    } else if (genreSet.has('action') || genreSet.has('adventure')) {
+        game.value.genre = 'Action Adventure';
+    } else if (genreSet.has('strategy')) {
+        game.value.genre = 'RTS';
+    }
+
+    // 2. Auto-match subgenres
+    const matchedSubs = new Set();
+    const categoryText = steamCategories.map(c => c.toLowerCase()).join(' | ');
+
+    if (categoryText.includes('single-player')) matchedSubs.add('Singleplayer');
+    if (categoryText.includes('multi-player') || categoryText.includes('pvp')) matchedSubs.add('Multiplayer');
+    if (categoryText.includes('co-op')) matchedSubs.add('Co-op');
+    if (genreSet.has('massively multiplayer') || categoryText.includes('mmo')) matchedSubs.add('MMO');
+    if (genreSet.has('indie')) matchedSubs.add('Indie');
+    if (genreSet.has('adventure')) matchedSubs.add('Adventure');
+    if (genreSet.has('strategy')) matchedSubs.add('Strategy');
+    if (genreSet.has('simulation')) matchedSubs.add('Simulation');
+    if (genreSet.has('sports') || genreSet.has('racing')) matchedSubs.add('Sports');
+
+    subgenresList.forEach(sub => {
+        if (combinedText.includes(sub.toLowerCase())) {
+            matchedSubs.add(sub);
+        }
+    });
+
+    game.value.subgenres = Array.from(matchedSubs);
+}
+
+onMounted(async () => {
+    const q = route.query;
+    if (q.title) {
+        game.value.title = String(q.title);
+    }
+    if (q.description) {
+        game.value.description = String(q.description);
+    }
+
+    let parsedGenres = [];
+    let parsedCategories = [];
+    try {
+        if (q.genres) parsedGenres = JSON.parse(String(q.genres));
+        if (q.categories) parsedCategories = JSON.parse(String(q.categories));
+    } catch (e) {
+        console.warn('Could not parse genres/categories from query:', e);
+    }
+
+    // If description or genres were empty on the query and steamAppId is present, fetch fresh details from Steam
+    if (q.steamAppId && (!game.value.description || parsedGenres.length === 0)) {
+        try {
+            const res = await axios.get(buildApiUrl(`/api/backlog/steam/details/${q.steamAppId}`));
+            if (res.data) {
+                if (!game.value.title && res.data.title) game.value.title = res.data.title;
+                if (!game.value.description && res.data.shortDescription) {
+                    game.value.description = res.data.shortDescription;
+                }
+                if (parsedGenres.length === 0 && Array.isArray(res.data.genres)) {
+                    parsedGenres = res.data.genres;
+                }
+                if (parsedCategories.length === 0 && Array.isArray(res.data.categories)) {
+                    parsedCategories = res.data.categories;
+                }
+            }
+        } catch (err) {
+            console.warn('Could not fetch fallback Steam details:', err);
+        }
+    }
+
+    if (q.title || q.description || parsedGenres.length > 0 || parsedCategories.length > 0) {
+        autoMatchGenresAndSubgenres(parsedGenres, parsedCategories, game.value.description, game.value.title);
+    }
 });
 
 function toggleSubgenre(sub) {
@@ -400,6 +511,10 @@ const submitForm = async () => {
             const file = new File([blob], fileName, { type: fileType });
 
             formData.append("wallpaper", file, fileName);
+        }
+
+        if (backlogId.value) {
+            formData.append("backlogId", backlogId.value);
         }
 
         const response = await axios.post(buildApiUrl('/api/games/upload'), formData, { 

@@ -13,6 +13,7 @@ const { setupChatbotSocket } = require('./socket/chatbot');
 // Import models (Ensuring schemas are registered)
 require('./models/game_schema');
 require('./models/movie_schema');
+require('./models/backlog_game_schema');
 require('./models/user_schema');
 require('./models/refreshToken');
 

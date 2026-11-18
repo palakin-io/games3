@@ -135,6 +135,16 @@ router.post('/upload', authenticateJWT, upload.single('wallpaper'), async (req, 
     const newGame = new Game(gameData);
     await newGame.save();
 
+    // If this game was promoted from the "To Play" backlog list, remove it from backlog
+    if (req.body.backlogId) {
+      try {
+        const BacklogGame = require('../models/backlog_game_schema');
+        await BacklogGame.findOneAndDelete({ _id: req.body.backlogId, userId: req.user.userId });
+      } catch (err) {
+        console.error('Error removing promoted game from backlog:', err);
+      }
+    }
+
     res.status(201).json({ message: 'Game uploaded successfully', gameId: newGame._id });
   } catch (error) {
     console.error(error);

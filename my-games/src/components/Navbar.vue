@@ -16,7 +16,9 @@
                   <router-link to="/" class="navigation-link" @click="closeNavigation">Home</router-link>
                 </li>
                 <!-- <li class="navigation-item"><router-link to="/list-page" class="navigation-link">Anime List</router-link></li> -->
-                <li class="navigation-item"><a href="#" class="navigation-link">Tiers</a></li>
+                <li class="navigation-item">
+                  <router-link to="/games-to-play" class="navigation-link" @click="closeNavigation">Games To Play</router-link>
+                </li>
                 <li class="navigation-item">
                   <router-link to="/games-list" class="navigation-link" @click="closeNavigation">Games List</router-link>
                 </li>
