@@ -2,13 +2,56 @@
     <div class="min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
         
         <!-- Side Slide for Characters and Soundtracks -->
-        <side-slide :is-open="isOpen" :panel-title="panelTitle" @close="isOpen = false">
+        <side-slide :is-open="isOpen" :panel-title="panelTitle" @close="handleSideSlideClose">
             <div v-if="panelTitle === 'Characters'">
                 <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 mb-6">
                     <h4 class="text-sm font-bold text-slate-200 mb-3">{{ isEditingChar ? 'Edit Character' : 'Add New Character' }}</h4>
                     <div class="space-y-3">
                         <form-input v-model="newCharacter.name" label="Character Name" type="text" name="char_name" placeholder="e.g. Cloud Strife"></form-input>
-                        <form-input v-model="newCharacter.picture_url" label="Image URL" type="text" name="char_url" placeholder="https://..."></form-input>
+                        
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label for="char_url" class="block text-slate-300 font-medium text-sm">Image URL:</label>
+                                <button
+                                    type="button"
+                                    @click="openCharImageSearch()"
+                                    :disabled="!newCharacter.name.trim()"
+                                    class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                                    title="Search character images based on Character Name and Game Title"
+                                >
+                                    <span>🔍</span> Find Character Image
+                                </button>
+                            </div>
+                            <input
+                                v-model="newCharacter.picture_url"
+                                type="text"
+                                name="char_url"
+                                id="char_url"
+                                placeholder="https://... or click Find Character Image"
+                                class="bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 w-full text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                            />
+                        </div>
+
+                        <!-- Live Image Preview before adding/saving -->
+                        <div v-if="newCharacter.picture_url" class="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900/90 flex items-center gap-3 p-2">
+                            <img
+                                :src="newCharacter.picture_url"
+                                alt="Selected character preview"
+                                class="w-16 h-20 object-cover object-top rounded-lg border border-slate-700 shrink-0"
+                            />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-semibold text-slate-200 truncate">{{ newCharacter.name || 'Character Preview' }}</p>
+                                <p class="text-[11px] text-slate-400 truncate mt-0.5">{{ newCharacter.picture_url }}</p>
+                                <button
+                                    type="button"
+                                    @click="newCharacter.picture_url = ''"
+                                    class="mt-1.5 text-[11px] text-red-400 hover:text-red-300 font-medium"
+                                >
+                                    Remove image
+                                </button>
+                            </div>
+                        </div>
+
                         <button type="button" @click="addCharacter()" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-md">
                             {{ isEditingChar ? 'Save Changes' : '+ Add Character' }}
                         </button>
@@ -71,6 +114,15 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Character Image Search Modal (nested inside SideSlide so HeadlessUI keeps the sidebar open) -->
+            <character-image-search-modal
+                :is-open="showCharImageModal"
+                :character-name="newCharacter.name"
+                :game-title="game.title"
+                @close="showCharImageModal = false"
+                @select="onSelectCharacterImage"
+            />
         </side-slide>
 
         <!-- Delete Confirmation Modal -->
@@ -287,6 +339,7 @@ import DragAndDrop from '@/components/misc/DragAndDrop.vue';
 import SelectInput from '@/components/misc/SelectInput.vue';
 import SideSlide from '@/components/SideSlide.vue';
 import Modal from '@/components/Modal.vue';
+import CharacterImageSearchModal from '@/components/CharacterImageSearchModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -383,10 +436,25 @@ function openSideSlide(slideName) {
     isOpen.value = true;
 }
 
+function handleSideSlideClose() {
+    if (showCharImageModal.value) return;
+    isOpen.value = false;
+}
+
 // Characters handling
 const newCharacter = ref({ name: '', picture_url: '' });
 const isEditingChar = ref(false);
 const charBeingEdited = ref(null);
+const showCharImageModal = ref(false);
+
+function openCharImageSearch() {
+    if (!newCharacter.value.name.trim()) return;
+    showCharImageModal.value = true;
+}
+
+function onSelectCharacterImage(url) {
+    newCharacter.value.picture_url = url;
+}
 
 function addCharacter() {
     if (!newCharacter.value.name) return;

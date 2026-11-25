@@ -30,6 +30,200 @@ const Game = require('../models/game_schema');
 const fs = require('fs');
 const path = require('path');
 
+const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const DDG_CACHE_TTL_MS = 10 * 60 * 1000;
+const ddgImageCache = new Map();
+
+function getCachedDdgResults(cacheKey) {
+  const entry = ddgImageCache.get(cacheKey);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    ddgImageCache.delete(cacheKey);
+    return null;
+  }
+  return entry.results;
+}
+
+function setCachedDdgResults(cacheKey, results) {
+  if (ddgImageCache.size >= 100) {
+    const oldestKey = ddgImageCache.keys().next().value;
+    ddgImageCache.delete(oldestKey);
+  }
+  ddgImageCache.set(cacheKey, {
+    results,
+    expiresAt: Date.now() + DDG_CACHE_TTL_MS
+  });
+}
+
+// Helper: Primary keyless search via DuckDuckGo Images (i.js) with in-memory caching
+async function searchDuckDuckGoImages(query, startIndex = 1) {
+  const pageSize = 12;
+  const cacheKey = query.toLowerCase();
+  let allResults = getCachedDdgResults(cacheKey);
+
+  if (!allResults) {
+    const tokenUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`;
+    const tokenRes = await fetch(tokenUrl, {
+      signal: AbortSignal.timeout(4000),
+      headers: {
+        'User-Agent': DEFAULT_USER_AGENT,
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+
+    if (!tokenRes.ok) {
+      throw new Error(`DDG token request failed with status ${tokenRes.status}`);
+    }
+
+    const html = await tokenRes.text();
+    const vqdMatch = html.match(/vqd=['"]?([\d-]+)['"]?/i);
+    if (!vqdMatch || !vqdMatch[1]) {
+      throw new Error('Could not extract vqd token from DuckDuckGo');
+    }
+
+    const vqd = vqdMatch[1];
+    const imgUrl = `https://duckduckgo.com/i.js?l=us-en&o=json&q=${encodeURIComponent(query)}&vqd=${encodeURIComponent(vqd)}&f=,,,,,&p=1`;
+    const imgRes = await fetch(imgUrl, {
+      signal: AbortSignal.timeout(4000),
+      headers: {
+        'User-Agent': DEFAULT_USER_AGENT,
+        'Accept': 'application/json',
+        'Referer': 'https://duckduckgo.com/'
+      }
+    });
+
+    if (!imgRes.ok) {
+      throw new Error(`DDG image request failed with status ${imgRes.status}`);
+    }
+
+    const data = await imgRes.json();
+    allResults = Array.isArray(data.results) ? data.results : [];
+    if (allResults.length > 0) {
+      setCachedDdgResults(cacheKey, allResults);
+    }
+  }
+
+  const offset = Math.max(0, (Number(startIndex) || 1) - 1);
+  const sliced = allResults.slice(offset, offset + pageSize);
+
+  const items = sliced
+    .filter(item => item && (item.image || item.thumbnail))
+    .map(item => ({
+      url: item.image || item.thumbnail,
+      thumbnailUrl: item.thumbnail || item.image,
+      title: item.title || '',
+      width: item.width || null,
+      height: item.height || null,
+      contextLink: item.url || ''
+    }));
+
+  const nextStartIndex = offset + pageSize < allResults.length ? offset + pageSize + 1 : null;
+
+  return {
+    items,
+    nextStartIndex,
+    source: 'duckduckgo'
+  };
+}
+
+// Helper: Keyless fallback #2 via Wikipedia PageImages + Jikan Characters API
+async function searchWikiAndJikanImages(query, charName = '') {
+  const results = [];
+
+  const wikiPromise = (async () => {
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=8&prop=pageimages&piprop=original|thumbnail&pithumbsize=600&format=json&origin=*`;
+      const res = await fetch(wikiUrl, {
+        signal: AbortSignal.timeout(4000),
+        headers: { 'User-Agent': DEFAULT_USER_AGENT }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
+      return pages
+        .filter(p => p && (p.original?.source || p.thumbnail?.source))
+        .map(p => ({
+          url: p.original?.source || p.thumbnail?.source,
+          thumbnailUrl: p.thumbnail?.source || p.original?.source,
+          title: p.title || query,
+          width: p.original?.width || p.thumbnail?.width || null,
+          height: p.original?.height || p.thumbnail?.height || null,
+          contextLink: `https://en.wikipedia.org/?curid=${p.pageid}`
+        }));
+    } catch (e) {
+      return [];
+    }
+  })();
+
+  const jikanPromise = (async () => {
+    try {
+      const searchTarget = (charName || query).trim();
+      const jikanUrl = `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(searchTarget)}&limit=10&order_by=favorites&sort=desc`;
+      const res = await fetch(jikanUrl, {
+        signal: AbortSignal.timeout(4000),
+        headers: { 'User-Agent': DEFAULT_USER_AGENT }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      const chars = Array.isArray(data.data) ? data.data : [];
+      return chars
+        .filter(c => c?.images?.jpg?.image_url || c?.images?.webp?.image_url)
+        .map(c => {
+          const img = c.images?.jpg?.image_url || c.images?.webp?.image_url;
+          return {
+            url: img,
+            thumbnailUrl: img,
+            title: c.name_kanji ? `${c.name} (${c.name_kanji})` : (c.name || searchTarget),
+            width: null,
+            height: null,
+            contextLink: c.url || ''
+          };
+        });
+    } catch (e) {
+      return [];
+    }
+  })();
+
+  const [wikiItems, jikanItems] = await Promise.all([wikiPromise, jikanPromise]);
+  results.push(...wikiItems, ...jikanItems);
+
+  return {
+    items: results,
+    nextStartIndex: null,
+    source: 'fallback'
+  };
+}
+
+// Search character images (DuckDuckGo Images primary -> Wikipedia/Jikan fallback)
+router.get('/characters/images', async (req, res) => {
+  try {
+    const query = (req.query.q || '').trim();
+    const charName = (req.query.character || '').trim();
+    const startIndex = Math.max(1, parseInt(req.query.start, 10) || 1);
+
+    if (!query) {
+      return res.status(400).json({ message: 'Search query (q) is required' });
+    }
+
+    // 1. Try DuckDuckGo keyless web image search
+    try {
+      const ddgResult = await searchDuckDuckGoImages(query, startIndex);
+      if (ddgResult && ddgResult.items.length > 0) {
+        return res.json(ddgResult);
+      }
+    } catch (ddgErr) {
+      console.warn('⚠️ DuckDuckGo image search failed, using Wiki/Jikan fallback:', ddgErr.message);
+    }
+
+    // 2. Fallback: Wikipedia + Jikan character portraits
+    const wikiJikanResult = await searchWikiAndJikanImages(query, charName);
+    return res.json(wikiJikanResult);
+  } catch (error) {
+    console.error('Error searching character images:', error);
+    res.status(500).json({ message: 'Failed to search character images' });
+  }
+});
+
 // Get game by ID
 router.get('/:gameId', async (req, res) => {
   try {
